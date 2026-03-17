@@ -379,552 +379,534 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
-// ═══════════════════════════════════════════════════════
-//  WORD DATA
-// ═══════════════════════════════════════════════════════
-const PAIRS = [
-  // ── FOOD & NATURE ──
-  {id:'chicken',   word:'a chicken',      unc:'chicken — meat / poultry (food)'},
-  {id:'fish',      word:'a fish',         unc:'fish — seafood in general'},
-  {id:'lamb',      word:'a lamb',         unc:'lamb — meat from a young sheep'},
-  {id:'turkey',    word:'a turkey',       unc:'turkey — the meat of a turkey'},
-  {id:'coffee',    word:'a coffee',       unc:'coffee — the drink in general'},
-  {id:'tea',       word:'a tea',          unc:'tea — the drink in general'},
-  {id:'beer',      word:'a beer',         unc:'beer — alcohol in general'},
-  {id:'wine',      word:'a wine',         unc:'wine — alcohol in general'},
-  {id:'cake',      word:'a cake',         unc:'cake — baked goods in general'},
-  {id:'chocolate', word:'a chocolate',    unc:'chocolate — the sweet material'},
-  {id:'wood',      word:'a wood',         unc:'wood — timber / the material'},
-  {id:'stone',     word:'a stone',        unc:'stone — the rock material'},
-  {id:'iron',      word:'an iron',        unc:'iron — the metal element'},
-  // ── HOUSEHOLD & OBJECTS ──
-  {id:'glass',     word:'a glass',        unc:'glass — the transparent material'},
-  {id:'paper',     word:'a paper',        unc:'paper — the writing material'},
-  {id:'fire',      word:'a fire',         unc:'fire — flames in general'},
-  {id:'light',     word:'a light',        unc:'light — illumination / brightness'},
-  {id:'noise',     word:'a noise',        unc:'noise — sound / background sound'},
-  {id:'sound',     word:'a sound',        unc:'sound — audio in general'},
-  {id:'paint',     word:'a paint',        unc:'paint — the liquid coating material'},
-  {id:'cloth',     word:'a cloth',        unc:'cloth — fabric / textile material'},
-  {id:'tin',       word:'a tin',          unc:'tin — the metal material'},
-  {id:'copper',    word:'a copper',       unc:'copper — the metal element'},
-  // ── ABSTRACT ──
-  {id:'work',      word:'a work',         unc:'work — effort / labour in general'},
-  {id:'experience',word:'an experience',  unc:'experience — knowledge over time'},
-  {id:'time',      word:'a time',         unc:'time — the general concept of duration'},
-  {id:'room',      word:'a room',         unc:'room — available space'},
-  {id:'life',      word:'a life',         unc:'life — the concept of being alive'},
-  {id:'love',      word:'a love',         unc:'love — the feeling in general'},
-  {id:'fear',      word:'a fear',         unc:'fear — the emotion in general'},
-  {id:'hope',      word:'a hope',         unc:'hope — optimism in general'},
-  {id:'dream',     word:'a dream',        unc:'dream — the concept of dreaming'},
-  {id:'thought',   word:'a thought',      unc:'thought — the process of thinking'},
-  {id:'knowledge', word:'a knowledge',    unc:'knowledge — information in general'},
-  {id:'beauty',    word:'a beauty',       unc:'beauty — attractiveness in general'},
-  {id:'success',   word:'a success',      unc:'success — achievement in general'},
-  {id:'failure',   word:'a failure',      unc:'failure — lack of success in general'},
-  {id:'pleasure',  word:'a pleasure',     unc:'pleasure — enjoyment in general'},
-  {id:'surprise',  word:'a surprise',     unc:'surprise — the feeling of being surprised'},
-  // ── NATURE & ELEMENTS ──
-  {id:'hair',      word:'a hair',         unc:'hair — all the hair on your head'},
-  {id:'sand',      word:'a sand',         unc:'sand — granular material on beaches'},
-  {id:'water',     word:'a water',        unc:'water — the liquid H₂O'},
-  {id:'snow',      word:'a snow',         unc:'snow — frozen precipitation in general'},
-  {id:'rain',      word:'a rain',         unc:'rain — precipitation in general'},
-  {id:'wind',      word:'a wind',         unc:'wind — moving air in general'},
-  {id:'cloud',     word:'a cloud',        unc:'cloud — water vapour in the sky'},
-  {id:'fog',       word:'a fog',          unc:'fog — thick mist in general'},
-  {id:'storm',     word:'a storm',        unc:'storm — bad weather in general'},
-  {id:'wave',      word:'a wave',         unc:'wave — the physics of waves'},
-  // ── PEOPLE & SOCIETY ──
-  {id:'language',  word:'a language',     unc:'language — communication in general'},
-  {id:'culture',   word:'a culture',      unc:'culture — civilisation in general'},
-  {id:'history',   word:'a history',      unc:'history — the study of past events'},
-  {id:'art',       word:'an art',         unc:'art — creative expression in general'},
-  {id:'sport',     word:'a sport',        unc:'sport — physical activity in general'},
-  {id:'business',  word:'a business',     unc:'business — commerce in general'},
-  {id:'crime',     word:'a crime',        unc:'crime — illegal activity in general'},
-  {id:'medicine',  word:'a medicine',     unc:'medicine — the science of health'},
-  {id:'technology',word:'a technology',   unc:'technology — tech in general'},
-  {id:'science',   word:'a science',      unc:'science — knowledge through experiment'},
-  // ── ACTIONS AS NOUNS ──
-  {id:'laugh',     word:'a laugh',        unc:'laugh — laughter in general'},
-  {id:'cry',       word:'a cry',          unc:'cry — crying / weeping in general'},
-  {id:'talk',      word:'a talk',         unc:'talk — conversation in general'},
-  {id:'run',       word:'a run',          unc:'run — running in general'},
-  {id:'swim',      word:'a swim',         unc:'swim — swimming in general'},
-  {id:'look',      word:'a look',         unc:'look — appearance in general'},
-  {id:'read',      word:'a read',         unc:'read — reading in general'},
-  {id:'walk',      word:'a walk',         unc:'walk — walking in general'},
+// ═══════════════ WORD BANK ═══════════════
+const PAIRS=[
+  {id:'chicken',word:'a chicken',unc:'chicken — meat / poultry (food)'},
+  {id:'fish',word:'a fish',unc:'fish — seafood in general'},
+  {id:'lamb',word:'a lamb',unc:'lamb — meat from a young sheep'},
+  {id:'turkey',word:'a turkey',unc:'turkey — the meat of a turkey'},
+  {id:'coffee',word:'a coffee',unc:'coffee — the drink in general'},
+  {id:'tea',word:'a tea',unc:'tea — the drink in general'},
+  {id:'beer',word:'a beer',unc:'beer — alcohol in general'},
+  {id:'wine',word:'a wine',unc:'wine — alcohol in general'},
+  {id:'cake',word:'a cake',unc:'cake — baked goods in general'},
+  {id:'chocolate',word:'a chocolate',unc:'chocolate — the sweet material'},
+  {id:'wood',word:'a wood',unc:'wood — timber / the material'},
+  {id:'stone',word:'a stone',unc:'stone — the rock material'},
+  {id:'iron',word:'an iron',unc:'iron — the metal element'},
+  {id:'glass',word:'a glass',unc:'glass — the transparent material'},
+  {id:'paper',word:'a paper',unc:'paper — the writing material'},
+  {id:'fire',word:'a fire',unc:'fire — flames in general'},
+  {id:'light',word:'a light',unc:'light — illumination / brightness'},
+  {id:'noise',word:'a noise',unc:'noise — background sound in general'},
+  {id:'sound',word:'a sound',unc:'sound — audio in general'},
+  {id:'paint',word:'a paint',unc:'paint — the liquid coating material'},
+  {id:'cloth',word:'a cloth',unc:'cloth — fabric / textile material'},
+  {id:'tin',word:'a tin',unc:'tin — the metal material'},
+  {id:'copper',word:'a copper',unc:'copper — the metal element'},
+  {id:'work',word:'a work',unc:'work — effort / labour in general'},
+  {id:'experience',word:'an experience',unc:'experience — knowledge over time'},
+  {id:'time',word:'a time',unc:'time — the general concept of duration'},
+  {id:'room',word:'a room',unc:'room — available space'},
+  {id:'life',word:'a life',unc:'life — the concept of being alive'},
+  {id:'love',word:'a love',unc:'love — the feeling in general'},
+  {id:'fear',word:'a fear',unc:'fear — the emotion in general'},
+  {id:'hope',word:'a hope',unc:'hope — optimism in general'},
+  {id:'dream',word:'a dream',unc:'dream — the concept of dreaming'},
+  {id:'thought',word:'a thought',unc:'thought — the process of thinking'},
+  {id:'beauty',word:'a beauty',unc:'beauty — attractiveness in general'},
+  {id:'success',word:'a success',unc:'success — achievement in general'},
+  {id:'failure',word:'a failure',unc:'failure — lack of success in general'},
+  {id:'pleasure',word:'a pleasure',unc:'pleasure — enjoyment in general'},
+  {id:'surprise',word:'a surprise',unc:'surprise — the feeling of being surprised'},
+  {id:'hair',word:'a hair',unc:'hair — all the hair on your head'},
+  {id:'water',word:'a water',unc:'water — the liquid H₂O'},
+  {id:'snow',word:'a snow',unc:'snow — frozen precipitation in general'},
+  {id:'rain',word:'a rain',unc:'rain — precipitation in general'},
+  {id:'wind',word:'a wind',unc:'wind — moving air in general'},
+  {id:'cloud',word:'a cloud',unc:'cloud — water vapour in the sky'},
+  {id:'fog',word:'a fog',unc:'fog — thick mist in general'},
+  {id:'storm',word:'a storm',unc:'storm — bad weather in general'},
+  {id:'wave',word:'a wave',unc:'wave — the physics of waves'},
+  {id:'language',word:'a language',unc:'language — communication in general'},
+  {id:'culture',word:'a culture',unc:'culture — civilisation in general'},
+  {id:'history',word:'a history',unc:'history — the study of past events'},
+  {id:'art',word:'an art',unc:'art — creative expression in general'},
+  {id:'sport',word:'a sport',unc:'sport — physical activity in general'},
+  {id:'business',word:'a business',unc:'business — commerce in general'},
+  {id:'crime',word:'a crime',unc:'crime — illegal activity in general'},
+  {id:'medicine',word:'a medicine',unc:'medicine — the science of health'},
+  {id:'technology',word:'a technology',unc:'technology — tech in general'},
+  {id:'science',word:'a science',unc:'science — knowledge through experiment'},
+  {id:'laugh',word:'a laugh',unc:'laugh — laughter in general'},
+  {id:'cry',word:'a cry',unc:'cry — crying / weeping in general'},
+  {id:'talk',word:'a talk',unc:'talk — conversation in general'},
+  {id:'run',word:'a run',unc:'run — running in general'},
+  {id:'swim',word:'a swim',unc:'swim — swimming in general'},
+  {id:'look',word:'a look',unc:'look — appearance in general'},
+  {id:'read',word:'a read',unc:'read — reading in general'},
+  {id:'walk',word:'a walk',unc:'walk — walking in general'},
+  {id:'sand',word:'a sand',unc:'sand — granular material on beaches'},
+  {id:'knowledge',word:'a knowledge',unc:'knowledge — information in general'},
 ];
+const shuffle=a=>[...a].sort(()=>Math.random()-.5);
+const pickPairs=(n=6)=>shuffle(PAIRS).slice(0,n);
 
-// Pick random N pairs from the full bank each game
-function pickPairs(n=6){ return shuffle(PAIRS).slice(0,n); }
+// ═══════════════ STATE ═══════════════
+const ABLY_KEY='w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
+const P_COLORS=['#9088ff','#ff5fa0','#3fffa8','#ffd166'];
+const P_BG=['rgba(108,99,255,.18)','rgba(255,95,160,.18)','rgba(63,255,168,.14)','rgba(255,209,102,.14)'];
 
-// ═══════════════════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════════════════
-let peer=null, conn=null, myRole=null, myName='', roomCode='';
-let players={};   // { 0:'Alice', 1:'Bob', 2:'Carol', 3:'Dan' }
-let myIdx=0;      // my numeric index 0-3
-let gs=null, selL=null, selR=null, connected=false;
-let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
-let myStreak=0;
-let powerups={freeze:2,hint:2};
-let frozenUntil=0;
+let ablyClient=null, ablyChannel=null;
+let myName='', myRole='', myIdx=0, roomCode='';
+let players={};   // {0:'Alice', 1:'Bob', ...}
+let maxPlayers=2;
+let gs=null;
+let selL=null, selR=null;
+let myStreak=0, powerups={freeze:2,hint:2,shuffle:2}, frozenUntil=0;
 let chosenMode='classic', chosenDiff='easy', chosenPairs=6, chosenMaxPlayers=2;
+let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
 
-// ═══════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════
-const go = id => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
-const $ = id => document.getElementById(id);
-function toast(msg,type=''){const t=$('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2600)}
-const shuffle = a => [...a].sort(()=>Math.random()-.5);
-const showBadge = t => { $('roomBadge').textContent=t; $('roomBadge').style.display=''; };
-const hideBadge = () => $('roomBadge').style.display='none';
+// ═══════════════ UTILS ═══════════════
+const $=id=>document.getElementById(id);
+const go=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');};
+function toast(msg,type=''){const t=$('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2500);}
+const showBadge=t=>{$('roomBadge').textContent=t;$('roomBadge').style.display='';};
+const hideBadge=()=>$('roomBadge').style.display='none';
+const myTurn=()=>gs&&gs.turn===myIdx;
+const numP=()=>Object.keys(players).length;
+function pickMode(el){document.querySelectorAll('#modeGrid .opt-card').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenMode=el.dataset.mode;}
+function pickDiff(el){document.querySelectorAll('#diffGrid .opt-card').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenDiff=el.dataset.diff;}
+function pickMaxPlayers(el){document.querySelectorAll('[data-mp]').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenMaxPlayers=parseInt(el.dataset.mp);}
+function updatePairsLabel(v){$('pairsLabel').textContent=v;chosenPairs=parseInt(v);}
 
-function pickMode(el){ document.querySelectorAll('#modeGrid .opt-card').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenMode=el.dataset.mode; }
-function pickDiff(el){ document.querySelectorAll('#diffGrid .opt-card').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenDiff=el.dataset.diff; }
-function updatePairsLabel(v){ $('pairsLabel').textContent=v; chosenPairs=parseInt(v); }
-function pickMaxPlayers(el){ document.querySelectorAll('[data-mp]').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenMaxPlayers=parseInt(el.dataset.mp); }
-
-// Per-player colors
-const AV_BG   =['rgba(108,99,255,.18)','rgba(255,95,160,.18)','rgba(63,255,168,.15)','rgba(255,209,102,.15)'];
-const AV_COLOR=['var(--acl)','var(--pk)','var(--gr)','var(--yl)'];
-const TURN_CLS =['tt1','tt2','tt3','tt4'];
-const SC_NUM_COLOR=['var(--acl)','var(--pk)','var(--gr)','var(--yl)'];
-
-function playerName(i){ return players[i]||('P'+(i+1)); }
-function myTurn(){ return gs && gs.turn===myIdx; }
-
-// ═══════════════════════════════════════════════════════
-//  ABLY — works across any network / mobile / different ISPs
-// ═══════════════════════════════════════════════════════
-const ABLY_KEY = 'w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
-let ablyClient = null;
-let ablyChannel = null;
-
-function send(data){
-  if(ablyChannel) ablyChannel.publish('msg', JSON.stringify(data));
-}
+// ═══════════════ ABLY ═══════════════
+function send(data){if(ablyChannel)ablyChannel.publish('msg',JSON.stringify(data));}
 
 async function initAbly(){
-  if(ablyClient) { try{ ablyClient.close(); }catch(e){} }
-  ablyClient = new Ably.Realtime({ key: ABLY_KEY, echoMessages: false });
-  return new Promise((res, rej) => {
-    ablyClient.connection.on('connected', () => res());
-    ablyClient.connection.on('failed',    () => rej(new Error('ably-failed')));
-    setTimeout(() => rej(new Error('timeout')), 10000);
+  if(ablyClient){try{ablyClient.close();}catch(e){}}
+  ablyClient=new Ably.Realtime({key:ABLY_KEY,echoMessages:false});
+  return new Promise((res,rej)=>{
+    ablyClient.connection.on('connected',()=>res());
+    ablyClient.connection.on('failed',()=>rej(new Error('failed')));
+    setTimeout(()=>rej(new Error('timeout')),10000);
   });
 }
-
-function subscribeChannel(channelName){
-  ablyChannel = ablyClient.channels.get(channelName);
-  ablyChannel.subscribe('msg', msg => {
-    try{ onData(JSON.parse(msg.data)); } catch(e){}
-  });
+function subscribeChannel(name){
+  ablyChannel=ablyClient.channels.get(name);
+  ablyChannel.subscribe('msg',msg=>{try{onData(JSON.parse(msg.data));}catch(e){}});
 }
 
+// ═══════════════ CREATE / JOIN ═══════════════
 async function createRoom(){
   const name=$('cName').value.trim();
   if(!name){toast('Enter your name','err');return;}
   myName=name; myRole='host'; myIdx=0;
-  players={0:myName};
+  players={0:myName}; maxPlayers=chosenMaxPlayers;
   const btn=$('createBtn'); btn.disabled=true; btn.textContent='Connecting…';
-  const errEl=$('createErr'); errEl.style.display='none';
-  const code=String(Math.floor(1000+Math.random()*9000)); roomCode=code;
-  try{ await initAbly(); subscribeChannel('dmm-room-'+code); connected=true; }
-  catch(e){ btn.disabled=false; btn.textContent='Create Room'; errEl.textContent='Connection failed. Check your internet.'; errEl.style.display=''; return; }
+  const err=$('createErr'); err.style.display='none';
+  roomCode=String(Math.floor(1000+Math.random()*9000));
+  try{await initAbly();subscribeChannel('dmm-'+roomCode);}
+  catch(e){btn.disabled=false;btn.textContent='Create Room';err.textContent='Connection failed. Try again.';err.style.display='';return;}
   btn.disabled=false; btn.textContent='Create Room';
-  showBadge('Room '+code); go('sLobby'); renderLobby();
+  showBadge('Room '+roomCode); go('sLobby'); renderLobby();
 }
 
 async function joinRoom(){
   const name=$('jName').value.trim(), code=$('jCode').value.trim();
-  const errEl=$('joinErr'); errEl.style.display='none';
+  const err=$('joinErr'); err.style.display='none';
   if(!name){toast('Enter your name','err');return;}
   if(!code||code.length<4){toast('Enter 4-digit code','err');return;}
-  myName=name; myRole='guest'; roomCode=code;
-  players={};
+  myName=name; myRole='guest'; roomCode=code; players={};
   const btn=$('joinBtn'); btn.disabled=true; btn.textContent='Connecting…';
-  try{ await initAbly(); subscribeChannel('dmm-room-'+code); connected=true; }
-  catch(e){ btn.disabled=false; btn.textContent='Join'; errEl.textContent='Connection failed. Check your internet.'; errEl.style.display=''; return; }
+  try{await initAbly();subscribeChannel('dmm-'+code);}
+  catch(e){btn.disabled=false;btn.textContent='Join';err.textContent='Connection failed. Try again.';err.style.display='';return;}
   btn.disabled=false; btn.textContent='Join';
   showBadge('Room '+code); go('sLobby'); renderLobby();
-  send({type:'hello', name:myName});
+  send({type:'hello',name:myName});
 }
 
-// ═══════════════════════════════════════════════════════
-//  LOBBY
-// ═══════════════════════════════════════════════════════
+// ═══════════════ LOBBY ═══════════════
 function renderLobby(){
   $('lobbyCode').textContent=roomCode;
-  const isHost=myRole==='host';
-  const maxP=gs?gs.maxPlayers:chosenMaxPlayers;
-  const slots=$('slots'); slots.innerHTML='';
+  const maxP=maxPlayers;
+  let html='';
   for(let i=0;i<maxP;i++){
-    const name=players[i]||null;
-    const isMe=(myIdx===i&&name===myName);
-    slots.innerHTML+=`<div class="slot ${name?'on':''} ${isMe?'me':''}">
-      <div class="av" style="background:${AV_BG[i]};color:${AV_COLOR[i]}">${name?name[0].toUpperCase():'?'}</div>
-      <div><div class="sn">${name?(name+(isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':'')):'Waiting...'}</div>
+    const n=players[i]||null;
+    const isMe=n&&n===myName&&myIdx===i;
+    html+=`<div class="slot ${n?'on':''} ${isMe?'me':''}">
+      <div class="av" style="background:${P_BG[i]};color:${P_COLORS[i]};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${n?n[0].toUpperCase():'?'}</div>
+      <div><div class="sn">${n?n+(isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':''):'Waiting...'}</div>
       <div class="ss">${i===0?'Host':'Player '+(i+1)}</div></div>
-      <div class="dot ${name?'dot-on dot-pulse':'dot-off'}"></div></div>`;
+      <div class="dot ${n?'dot-on'+(i>0?' dot-pulse':''):'dot-off'}"></div></div>`;
   }
+  $('slots').innerHTML=html;
+  const joined=numP();
   const sa=$('startArea'), li=$('lobbyInfo');
-  const joined=Object.keys(players).length;
-  if(isHost){
+  if(myRole==='host'){
     sa.innerHTML=joined>=2
-      ?`<button class="btn bp bfull" onclick="startGame()">Start Game ▶ (${joined}/${maxP})</button>`
-      :`<div style="font-size:12px;color:var(--m)">Need at least 2 players…</div>`;
-    li.textContent=joined>=2?'Ready! Start now or wait for more.':'Share the code with your friends.';
+      ?`<button class="btn bp bfull" onclick="startGame()">Start Game ▶ (${joined} players)</button>`
+      :`<div style="font-size:12px;color:var(--m)">Waiting for players… (${joined}/${maxP})</div>`;
+    li.textContent=joined>=2?'Ready! Start now or wait for more.':'Share the code with friends.';
   }else{
     sa.innerHTML=`<div style="font-size:12px;color:var(--m)">Waiting for host to start… (${joined}/${maxP})</div>`;
-    li.textContent='Connected! Host will start the game.';
+    li.textContent='Connected! The host will start the game.';
   }
 }
 
-// ═══════════════════════════════════════════════════════
-//  MESSAGES
-// ═══════════════════════════════════════════════════════
+// ═══════════════ MESSAGES ═══════════════
 function onData(msg){
   switch(msg.type){
-    case 'hello':
-      if(myRole==='host'){
-        const taken=Object.keys(players).length;
-        if(taken>=chosenMaxPlayers){send({type:'room_full'});return;}
-        players[taken]=msg.name;
-        send({type:'lobby_state', players, maxPlayers:chosenMaxPlayers});
-        toast(msg.name+' joined!','ok');
-        renderLobby();
-      }
-      break;
-    case 'lobby_state':
-      // numeric keys come as strings over JSON, convert
-      players={};
-      Object.entries(msg.players).forEach(([k,v])=>players[parseInt(k)]=v);
-      chosenMaxPlayers=msg.maxPlayers;
-      // find my index
-      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+
+    case 'hello':{
+      if(myRole!=='host') break;
+      const taken=numP();
+      if(taken>=maxPlayers){send({type:'room_full'});break;}
+      const idx=taken;
+      players[idx]=msg.name;
+      // broadcast updated lobby to everyone
+      send({type:'lobby_update',players,maxPlayers});
+      toast(msg.name+' joined!','ok');
       renderLobby();
       break;
+    }
+
+    case 'lobby_update':{
+      players=msg.players; maxPlayers=msg.maxPlayers;
+      // find my slot
+      for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
+      renderLobby();
+      break;
+    }
+
     case 'room_full':
       toast('Room is full!','err'); leaveRoom(); break;
-    case 'start':
-      gs=msg.state;
-      players={};
-      Object.entries(gs.players).forEach(([k,v])=>players[parseInt(k)]=v);
-      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+
+    case 'start':{
+      gs=msg.state; maxPlayers=gs.maxPlayers;
+      players=gs.players;
+      for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
       startRender(); go('sGame'); break;
-    case 'state':
-      gs=msg.state; updateRender();
-      if(gs.status==='finished') setTimeout(showResult,350); break;
-    case 'powerup': handleOppPowerup(msg); break;
-    case 'rematch':
+    }
+
+    case 'state':{
       gs=msg.state;
-      players={};
-      Object.entries(gs.players).forEach(([k,v])=>players[parseInt(k)]=v);
-      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+      if(gs.status==='finished'){clearAllTimers();setTimeout(showResult,350);}
+      else updateRender();
+      break;
+    }
+
+    case 'powerup':
+      if(msg.action==='freeze'&&msg.target===myIdx){
+        frozenUntil=Date.now()+8000;
+        toast('❄️ You are frozen for 8s!','info');
+        renderScoreBar(); renderStatus();
+      }
+      if(msg.action==='shuffle_opp'&&msg.target===myIdx){
+        // shuffle MY right cards visually
+        const unmatched=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
+        const sh=shuffle(unmatched); let si=0;
+        gs.rightCards=gs.rightCards.map(c=>gs.matched.includes(c.id)?c:sh[si++]);
+        $('rightCol').querySelectorAll('.card:not(.matched)').forEach(el=>el.classList.add('shuffling'));
+        setTimeout(()=>{
+          $('rightCol').innerHTML='';
+          gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));
+          toast('🔀 Opponent shuffled your cards!','err');
+        },500);
+      }
+      break;
+
+    case 'player_left':{
+      const leftIdx=msg.idx;
+      const leftName=msg.name||('Player '+(leftIdx+1));
+      if(!gs||gs.status!=='playing') break;
+
+      if(msg.numPlayers<=2){
+        // 1v1 — end the game immediately
+        gs.status='finished'; gs.finishedAt=Date.now();
+        clearAllTimers();
+        toast(leftName+' left the match','err');
+        setTimeout(showResult,600);
+      } else {
+        // 3-4 players — remove player and skip their future turns
+        toast(leftName+' left — their turns will be skipped','info');
+        delete gs.players[leftIdx];
+        gs.numPlayers=Object.keys(gs.players).length;
+        // rebuild turn index order (skip gaps)
+        // if it was their turn, advance now
+        if(gs.turn===leftIdx){
+          gs.turn=(gs.turn+1)%msg.numPlayers;
+          // keep advancing if we land on another missing player
+          let safety=0;
+          while(!gs.players[gs.turn]&&safety++<4) gs.turn=(gs.turn+1)%msg.numPlayers;
+        }
+        updateRender();
+      }
+      break;
+    }
+      gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
+      for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
       startRender(); go('sGame'); break;
+    }
   }
 }
 
-function handleOppPowerup(msg){
-  if(msg.action==='freeze'&&msg.target===myIdx){
-    frozenUntil=Date.now()+(msg.duration||8000);
-    toast('❄️ You are frozen for 8s!','info');
-    renderScoreBar();
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-//  GAME START
-// ═══════════════════════════════════════════════════════
+// ═══════════════ START GAME ═══════════════
 function startGame(){
   const n=chosenPairs||6;
   const pairs=pickPairs(n);
-  const numP=Object.keys(players).length;
+  const np=numP();
   const scores={}, lives={};
-  for(let i=0;i<numP;i++){scores[i]=0; lives[i]=3;}
+  for(let i=0;i<np;i++){scores[i]=0; lives[i]=3;}
   gs={
-    leftCards: shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
-    rightCards: shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),
+    leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
+    rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),
     matched:[], scores, lives,
-    turn:0, numPlayers:numP,
-    players: {...players},   // snapshot
-    status:'playing', startedAt:Date.now(), finishedAt:null,
+    turn:0,          // index of whose turn it is
+    numPlayers:np,
+    players:{...players},
+    status:'playing',
+    startedAt:Date.now(), finishedAt:null,
     mode:chosenMode, diff:chosenDiff,
     blitzEnd:chosenMode==='blitz'?Date.now()+60000:null,
     maxPlayers:chosenMaxPlayers,
   };
   send({type:'start',state:gs});
-  myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
   startRender(); go('sGame');
 }
 
-// ═══════════════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════════════
+// ═══════════════ RENDER ═══════════════
+function clearAllTimers(){clearInterval(timerI);clearInterval(turnTimerI);clearInterval(blitzI);clearInterval(shuffleI);}
+
 function startRender(){
   selL=null; selR=null;
   clearAllTimers();
+  $('leftCol').innerHTML=''; $('rightCol').innerHTML=''; $('midCol').innerHTML='';
+  gs.leftCards.forEach(c=>{
+    $('leftCol').appendChild(makeCard(c,'l'));
+    const ln=document.createElement('div');
+    ln.className='conn'+(gs.matched.includes(c.id)?' on':'');
+    ln.id='conn_'+c.id;
+    $('midCol').appendChild(ln);
+  });
+  gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));
+  renderStatsBar(); renderScoreBar(); renderStatus(); renderPowerups();
 
-  const lc=$('leftCol'), rc=$('rightCol'), mc=$('midCol');
-  lc.innerHTML=''; rc.innerHTML=''; mc.innerHTML='';
+  if(gs.mode==='blitz'){$('blitzTimerWrap').style.display='';$('turnTimerWrap').style.display='none';startBlitzTimer();}
+  else if(gs.mode==='speed'){$('blitzTimerWrap').style.display='none';$('turnTimerWrap').style.display='';if(myTurn())startTurnTimer();}
+  else{$('blitzTimerWrap').style.display='none';$('turnTimerWrap').style.display='none';}
 
-  gs.leftCards.forEach(c=>{ lc.appendChild(makeCard(c,'l')); const ln=document.createElement('div'); ln.className='conn'+(gs.matched.includes(c.id)?' on':''); ln.id='conn_'+c.id; mc.appendChild(ln); });
-  gs.rightCards.forEach(c=>rc.appendChild(makeCard(c,'r')));
-
-  renderStatsBar();
-  renderScoreBar();
-  renderStatus();
-  renderPowerups();
-  $('pLeft').textContent=gs.leftCards.length-gs.matched.length;
-
-  // Blitz timer
-  if(gs.mode==='blitz'){
-    $('blitzTimerWrap').style.display='';
-    $('turnTimerWrap').style.display='none';
-    startBlitzTimer();
-  } else if(gs.mode==='speed'){
-    $('blitzTimerWrap').style.display='none';
-    $('turnTimerWrap').style.display='';
-    if(gs.turn===myRole) startTurnTimer();
-  } else {
-    $('blitzTimerWrap').style.display='none';
-    $('turnTimerWrap').style.display='none';
-  }
-
-  // Expert: reshuffle every 30s
-  if(gs.diff==='expert'){
-    shuffleI=setInterval(()=>{ if(gs.status!=='playing') return; reshuffleCards(); },30000);
-  }
-
-  // General elapsed timer
-  timerI=setInterval(()=>{ $('pTime').textContent=Math.floor((Date.now()-gs.startedAt)/1000)+'s'; },500);
+  if(gs.diff==='expert') shuffleI=setInterval(()=>{if(gs.status==='playing')reshuffleCards();},30000);
+  timerI=setInterval(()=>{const el=$('pTime');if(el)el.textContent=Math.floor((Date.now()-gs.startedAt)/1000)+'s';},500);
 }
 
-function makeCard(c, side){
+function makeCard(c,side){
   const d=document.createElement('div');
   const isM=gs.matched.includes(c.id);
-  const notMine=gs.turn!==myIdx;
-  const isFrozen=Date.now()<frozenUntil;
-  d.className='card'+(isM?' matched dis':'')+(notMine&&!isM?' dis':'')+(isFrozen&&!isM?' dis':'');
+  const canAct=myTurn()&&!isM&&Date.now()>=frozenUntil;
+  d.className='card'+(isM?' matched dis':canAct?'':' dis');
   d.id=(side==='l'?'lc_':'rc_')+c.id;
   if(side==='l'){
     d.innerHTML=`<div class="cw">${c.word}</div><span class="badge bc">countable</span><span class="chk">✓</span>`;
-    if(!isM) d.onclick=()=>selectL(c.id);
+    if(canAct) d.onclick=()=>selectL(c.id);
   } else {
-    const isHard=gs.diff==='hard'||gs.diff==='expert';
-    d.innerHTML=`<div class="cw" id="cwrc_${c.id}">${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
-    if(isHard){ const el=d.querySelector('.cw'); el.style.filter='blur(7px)'; el.style.userSelect='none'; }
-    if(!isM) d.onclick=()=>selectR(c.id);
+    const hard=gs.diff==='hard'||gs.diff==='expert';
+    d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${hard?'style="filter:blur(7px);user-select:none"':''}>${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
+    if(canAct) d.onclick=()=>selectR(c.id);
   }
   return d;
 }
 
 function updateRender(){
   gs.matched.forEach(id=>{
-    const l=document.getElementById('lc_'+id), r=document.getElementById('rc_'+id), c=document.getElementById('conn_'+id);
+    const l=$('lc_'+id),r=$('rc_'+id),c=$('conn_'+id);
     if(l){l.className='card matched dis';l.onclick=null;}
     if(r){r.className='card matched dis';r.onclick=null;}
     if(c) c.classList.add('on');
   });
-  const mine=gs.turn===myIdx;
-  const isFrozen=Date.now()<frozenUntil;
-  gs.leftCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('lc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectL(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
-  gs.rightCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('rc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectR(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
-  renderScoreBar(); renderStatus();
-  $('pLeft').textContent=gs.leftCards.length-gs.matched.length;
-  if(gs.mode==='speed'){ clearTurnTimer(); if(gs.turn===myIdx) startTurnTimer(); }
+  const canAct=myTurn()&&Date.now()>=frozenUntil;
+  gs.leftCards.forEach(c=>{if(!gs.matched.includes(c.id)){const el=$('lc_'+c.id);if(el){if(canAct){el.classList.remove('dis');el.onclick=()=>selectL(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
+  gs.rightCards.forEach(c=>{if(!gs.matched.includes(c.id)){const el=$('rc_'+c.id);if(el){if(canAct){el.classList.remove('dis');el.onclick=()=>selectR(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
+  renderStatsBar(); renderScoreBar(); renderStatus();
+  if(gs.mode==='speed'){clearInterval(turnTimerI);if(myTurn())startTurnTimer();}
 }
 
 function renderStatsBar(){
-  const pairsLeft=gs.leftCards.length-gs.matched.length;
+  const left=gs.leftCards.length-gs.matched.length;
   const modeLabel={classic:'⚡ Classic',speed:'⏱ Speed',blitz:'🔥 Blitz',survival:'❤️ Survival'}[gs.mode]||'';
   const diffLabel={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🔴 Hard',expert:'💀 Expert'}[gs.diff]||'';
   $('statsBar').innerHTML=`
-    <div class="pill"><span class="pv" id="pLeft">${pairsLeft}</span><span class="pl">left</span></div>
+    <div class="pill"><span class="pv" id="pLeft">${left}</span><span class="pl">left</span></div>
     <div class="pill"><span class="pv" id="pTime">0s</span></div>
     <div class="pill"><span class="pv">${modeLabel}</span></div>
     <div class="pill"><span class="pv">${diffLabel}</span></div>`;
 }
 
 function renderScoreBar(){
-  const numP=gs.numPlayers||Object.keys(players).length;
+  const np=gs.numPlayers;
   const showLives=gs.mode==='survival';
   const isFrozen=Date.now()<frozenUntil;
   let html='';
-  for(let i=0;i<numP;i++){
-    const name=playerName(i);
-    const score=gs.scores[i]||0;
-    const lives=gs.lives?.[i]??3;
+  for(let i=0;i<np;i++){
+    const name=gs.players[i]||'P'+(i+1);
     const isMe=i===myIdx;
     const isTurn=gs.turn===i;
-    const isFroz=isMe&&isFrozen;
-    const livesHtml=showLives?'<div class="lives">'+[...Array(3)].map((_,j)=>`<span class="heart${j>=lives?' lost':''}">❤️</span>`).join('')+'</div>':'';
-    const streakHtml=isMe&&myStreak>=3?`<span class="streak-badge">🔥 ${myStreak}</span>`:'';
-    html+=`<div class="sc ${isTurn?'act':''} ${isFroz?'frozen':''}" style="${isTurn?'border-color:'+['rgba(108,99,255,.45)','rgba(255,95,160,.45)','rgba(63,255,168,.45)','rgba(255,209,102,.45)'][i]:''}">
-      <div class="av" style="width:26px;height:26px;font-size:11px;background:${AV_BG[i]};color:${AV_COLOR[i]}">${name[0].toUpperCase()}</div>
+    const sc=gs.scores[i]||0;
+    const lives=gs.lives?.[i]??3;
+    const streakBadge=isMe&&myStreak>=3?`<span class="streak-badge">🔥 ${myStreak}</span>`:'';
+    const livesHTML=showLives?'<div class="lives">'+[...Array(3)].map((_,j)=>`<span class="heart${j>=lives?' lost':''}">❤️</span>`).join('')+'</div>':'';
+    const frozenMe=isMe&&isFrozen;
+    html+=`<div class="sc ${isTurn?'act':''} ${frozenMe?'frozen':''}" style="${isTurn?'border-color:'+P_COLORS[i]+'66':''}">
+      <div class="av" style="width:26px;height:26px;border-radius:50%;background:${P_BG[i]};color:${P_COLORS[i]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">${name[0].toUpperCase()}</div>
       <div class="scname">${name}${isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
-      ${livesHtml}${streakHtml}
-      ${isTurn?`<span class="ttag ${TURN_CLS[i]}">turn</span>`:''}
-      ${isFroz?'<span class="frozen-icon">❄️</span>':''}
-      <div class="scnum" style="color:${SC_NUM_COLOR[i]}">${score}</div>
+      ${livesHTML}${streakBadge}
+      ${isTurn?`<span class="ttag" style="color:${P_COLORS[i]};background:${P_BG[i]};border:1px solid ${P_COLORS[i]}44">turn</span>`:''}
+      ${frozenMe?'<span style="font-size:14px">❄️</span>':''}
+      <div class="scnum" style="color:${P_COLORS[i]}">${sc}</div>
     </div>`;
   }
   $('scoreBar').innerHTML=html;
 }
 
 function renderStatus(){
-  const el=$('statusBar');
-  const isFrozen=Date.now()<frozenUntil;
-  if(isFrozen){ el.innerHTML=`<span class="steal-msg">❄️ You are frozen! Wait...</span>`; return; }
-  if(gs.turn===myIdx) el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
-  else el.innerHTML=`${playerName(gs.turn)}'s turn…`;
-}
-
-function renderPowerups(){
-  const bar=$('powerupBar');
-  if(gs.mode==='classic'||gs.mode==='speed'||gs.mode==='blitz'||gs.mode==='survival'){
-    bar.style.display='flex';
-    bar.innerHTML=`
-      <button class="pup" id="pupFreeze" onclick="usePowerup('freeze')" ${powerups.freeze<=0?'disabled':''}>
-        <span class="pup-icon">❄️</span><span class="pup-label">Freeze</span><span class="pup-count">${powerups.freeze}</span>
-      </button>
-      <button class="pup" id="pupHint" onclick="usePowerup('hint')" ${powerups.hint<=0?'disabled':''}>
-        <span class="pup-icon">💡</span><span class="pup-label">Hint</span><span class="pup-count">${powerups.hint}</span>
-      </button>`;
+  const el=$('statusBar'); if(!el) return;
+  if(Date.now()<frozenUntil){el.innerHTML=`<span class="steal-msg">❄️ You are frozen! Wait...</span>`;return;}
+  if(myTurn()){
+    const isHard=gs.diff==='hard'||gs.diff==='expert';
+    if(isHard&&selL) el.innerHTML=`<span class="turn-msg">Good!</span> Now pick a hidden meaning to reveal it`;
+    else if(isHard) el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word first, then a hidden meaning`;
+    else el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
   } else {
-    bar.style.display='none';
+    el.innerHTML=`${gs.players[gs.turn]||'Player '+(gs.turn+1)}'s turn…`;
   }
 }
 
-// ═══════════════════════════════════════════════════════
-//  TIMERS
-// ═══════════════════════════════════════════════════════
-function clearAllTimers(){ clearInterval(timerI); clearInterval(turnTimerI); clearInterval(blitzI); clearInterval(shuffleI); }
-function clearTurnTimer(){ clearInterval(turnTimerI); const f=$('turnFill'); if(f){f.style.width='100%';f.className='turn-timer-fill';} }
+function renderPowerups(){
+  const bar=$('powerupBar'); bar.style.display='flex';
+  const shuffleBtn=gs.diff==='expert'
+    ?`<button class="pup" onclick="usePowerup('shuffle')" ${powerups.shuffle<=0?'disabled':''}>
+        <span class="pup-icon">🔀</span><span class="pup-label">Shuffle opp.</span><span class="pup-count">${powerups.shuffle}</span>
+      </button>`
+    :'';
+  bar.innerHTML=`
+    <button class="pup" onclick="usePowerup('freeze')" ${powerups.freeze<=0?'disabled':''}>
+      <span class="pup-icon">❄️</span><span class="pup-label">Freeze</span><span class="pup-count">${powerups.freeze}</span>
+    </button>
+    <button class="pup" onclick="usePowerup('hint')" ${powerups.hint<=0?'disabled':''}>
+      <span class="pup-icon">💡</span><span class="pup-label">Hint</span><span class="pup-count">${powerups.hint}</span>
+    </button>
+    ${shuffleBtn}`;
+}
 
+// ═══════════════ TIMERS ═══════════════
 function startTurnTimer(){
-  if(gs.mode!=='speed') return;
-  let secs=10;
-  const fill=$('turnFill');
+  let secs=10; const fill=$('turnFill');
   fill.style.width='100%'; fill.className='turn-timer-fill';
   clearInterval(turnTimerI);
   turnTimerI=setInterval(()=>{
-    secs-=0.1;
-    const pct=Math.max(0,(secs/10)*100);
+    secs-=0.1; const pct=Math.max(0,(secs/10)*100);
     fill.style.width=pct+'%';
     if(pct<30) fill.className='turn-timer-fill danger';
     else if(pct<60) fill.className='turn-timer-fill warn';
-    if(secs<=0){
-      clearInterval(turnTimerI);
-      toast("Time's up! Turn passes",'err');
-      passTurn();
-    }
+    if(secs<=0){clearInterval(turnTimerI);toast("Time's up!",'err');passTurn();}
   },100);
 }
 
 function startBlitzTimer(){
-  const totalMs=60000;
-  const circumference=125.6;
-  const circle=$('blitzCircle');
-  const num=$('blitzNum');
+  const total=60000; const circ=125.6;
+  const circle=$('blitzCircle'), num=$('blitzNum');
   clearInterval(blitzI);
   blitzI=setInterval(()=>{
-    const remaining=Math.max(0,gs.blitzEnd-Date.now());
-    const secs=Math.ceil(remaining/1000);
-    const pct=remaining/totalMs;
-    const offset=circumference*(1-pct);
-    circle.style.strokeDashoffset=offset;
-    num.textContent=secs;
-    if(secs<=10) circle.style.stroke='var(--rd)';
-    else if(secs<=20) circle.style.stroke='var(--or)';
-    else circle.style.stroke='var(--ac)';
-    if(remaining<=0){
+    const rem=Math.max(0,gs.blitzEnd-Date.now());
+    const s=Math.ceil(rem/1000);
+    circle.style.strokeDashoffset=circ*(1-rem/total);
+    num.textContent=s;
+    circle.style.stroke=s<=10?'var(--rd)':s<=20?'var(--or)':'var(--ac)';
+    if(rem<=0){
       clearInterval(blitzI);
-      gs.status='finished'; gs.finishedAt=Date.now();
-      send({type:'state',state:gs,oppStreak:myStreak});
+      // Only host sends the finish to avoid race condition
+      if(myRole==='host'&&gs.status==='playing'){
+        gs.status='finished'; gs.finishedAt=Date.now();
+        send({type:'state',state:gs});
+      }
       showResult();
     }
   },200);
 }
 
 function passTurn(){
-  gs.turn=(gs.turn+1)%gs.numPlayers;
+  let next=(gs.turn+1)%gs.numPlayers;
+  // skip slots of players who left (not in gs.players)
+  let safety=0;
+  while(!gs.players[next]&&safety++<gs.numPlayers) next=(next+1)%gs.numPlayers;
+  gs.turn=next;
   send({type:'state',state:gs});
   updateRender();
 }
 
-// ═══════════════════════════════════════════════════════
-//  POWER-UPS
-// ═══════════════════════════════════════════════════════
-function usePowerup(type){
-  if(powerups[type]<=0) return;
-  powerups[type]--;
-  if(type==='freeze'){
-    // freeze next player in turn order
-    const target=(myIdx+1)%gs.numPlayers;
-    send({type:'powerup',action:'freeze',duration:8000,target});
-    toast('❄️ '+playerName(target)+' frozen for 8s!','info');
-  } else if(type==='hint'){
-    revealHint();
-    toast('💡 Hint revealed!','info');
-  }
-  renderPowerups();
-}
-
-function revealHint(){
-  const unmatched=gs.leftCards.filter(c=>!gs.matched.includes(c.id));
-  if(!unmatched.length) return;
-  const target=unmatched[Math.floor(Math.random()*unmatched.length)];
-  const rightEl=document.getElementById('rc_'+target.id);
-  if(rightEl){
-    rightEl.classList.add('hint-reveal');
-    const cw=rightEl.querySelector('.cw');
-    if(cw) cw.style.filter='none';
-    setTimeout(()=>{ rightEl.classList.remove('hint-reveal'); if(gs.diff==='hard'||gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-//  EXPERT RESHUFFLE
-// ═══════════════════════════════════════════════════════
 function reshuffleCards(){
-  const unmatchedR=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
-  const shuffled=shuffle(unmatchedR); let i=0;
-  gs.rightCards=gs.rightCards.map(c=>gs.matched.includes(c.id)?c:shuffled[i++]);
-  const rc=$('rightCol');
-  rc.querySelectorAll('.card:not(.matched)').forEach(el=>el.classList.add('shuffling'));
-  setTimeout(()=>{ rc.innerHTML=''; gs.rightCards.forEach(c=>rc.appendChild(makeCard(c,'r'))); toast('💀 Expert: cards reshuffled!','info'); },500);
+  const unmatched=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
+  const sh=shuffle(unmatched); let i=0;
+  gs.rightCards=gs.rightCards.map(c=>gs.matched.includes(c.id)?c:sh[i++]);
+  $('rightCol').querySelectorAll('.card:not(.matched)').forEach(el=>el.classList.add('shuffling'));
+  setTimeout(()=>{$('rightCol').innerHTML='';gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));toast('💀 Cards reshuffled!','info');},500);
 }
 
-// ═══════════════════════════════════════════════════════
-//  SELECTION & MATCHING
-// ═══════════════════════════════════════════════════════
+// ═══════════════ SELECTION ═══════════════
 function selectL(id){
-  if(gs.turn!==myIdx){toast("Not your turn!",'err');return}
-  if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return}
-  if(selL===id){clearSel();return}
-  if(selL) document.getElementById('lc_'+selL)?.classList.remove('sel');
-  selL=id; document.getElementById('lc_'+id)?.classList.add('sel'); tryMatch();
-}
-function selectR(id){
-  if(gs.turn!==myIdx){toast("Not your turn!",'err');return}
-  if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return}
-  if(selR===id){clearSel();return}
-  if(selR) document.getElementById('rc_'+selR)?.classList.remove('selr');
-  selR=id; document.getElementById('rc_'+id)?.classList.add('selr');
-  if(gs.diff==='hard'||gs.diff==='expert'){ const cw=document.querySelector('#rc_'+id+' .cw'); if(cw) cw.style.filter='none'; }
+  if(!myTurn()){toast("Not your turn!",'err');return;}
+  if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
+  if(selL===id){clearSel();return;}
+  if(selL) $('lc_'+selL)?.classList.remove('sel');
+  // in hard/expert, hide previously peeked right card when we change left selection
+  if(selR&&(gs.diff==='hard'||gs.diff==='expert')){
+    const cw=document.querySelector('#rc_'+selR+' .cw');
+    if(cw) cw.style.filter='blur(7px)';
+    $('rc_'+selR)?.classList.remove('selr');
+    selR=null;
+  }
+  selL=id; $('lc_'+id)?.classList.add('sel');
+  // in hard/expert show a "now pick the meaning" hint
+  if(gs.diff==='hard'||gs.diff==='expert') renderStatus();
   tryMatch();
 }
+
+function selectR(id){
+  if(!myTurn()){toast("Not your turn!",'err');return;}
+  if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
+  // in hard/expert: must pick left first
+  if((gs.diff==='hard'||gs.diff==='expert')&&!selL){
+    toast('Pick a word on the left first!','err'); return;
+  }
+  if(selR===id){
+    // deselect — re-blur it
+    $('rc_'+id)?.classList.remove('selr');
+    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+id+' .cw');if(cw)cw.style.filter='blur(7px)';}
+    selR=null; return;
+  }
+  // hide previous right selection
+  if(selR){
+    $('rc_'+selR)?.classList.remove('selr');
+    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
+  }
+  selR=id; $('rc_'+id)?.classList.add('selr');
+  // reveal the hidden meaning when user picks it
+  if(gs.diff==='hard'||gs.diff==='expert'){
+    const cw=document.querySelector('#rc_'+id+' .cw');
+    if(cw) cw.style.filter='none';
+  }
+  tryMatch();
+}
+
 function clearSel(){
-  if(selL) document.getElementById('lc_'+selL)?.classList.remove('sel');
-  if(selR){ document.getElementById('rc_'+selR)?.classList.remove('selr'); if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';} }
+  if(selL) $('lc_'+selL)?.classList.remove('sel');
+  if(selR){
+    $('rc_'+selR)?.classList.remove('selr');
+    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
+  }
   selL=null; selR=null;
 }
 
@@ -935,118 +917,148 @@ function tryMatch(){
 
   if(l===r){
     myStreak++;
-    let bonus=0;
-    if(myStreak%3===0){ bonus=2; toast(`🔥 ${myStreak} streak! +${1+bonus}!`,'streak'); }
+    const bonus=myStreak>0&&myStreak%3===0?2:0;
+    if(bonus) toast(`🔥 ${myStreak} streak! +${1+bonus}`,'streak');
     else toast('Correct! +1','ok');
     gs.matched.push(l);
-    gs.scores[myIdx]=(gs.scores[myIdx]||0)+(1+bonus);
+    gs.scores[myIdx]+=(1+bonus);
     gs.turn=next;
+    // finish when all pairs matched (works for ALL modes including blitz)
     const allDone=gs.matched.length===gs.leftCards.length;
-    const blitzDone=gs.mode==='blitz'&&gs.blitzEnd&&Date.now()>=gs.blitzEnd;
-    if(allDone||blitzDone){ gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers(); }
+    if(allDone){gs.status='finished';gs.finishedAt=Date.now();clearAllTimers();}
     send({type:'state',state:gs});
     updateRender();
     if(gs.status==='finished') setTimeout(showResult,350);
   } else {
     myStreak=0;
-    const le=document.getElementById('lc_'+l), re=document.getElementById('rc_'+r);
+    const le=$('lc_'+l), re=$('rc_'+r);
     le?.classList.add('wrong'); re?.classList.add('wrong');
+
     if(gs.mode==='survival'){
       gs.lives[myIdx]=Math.max(0,(gs.lives[myIdx]??3)-1);
-      toast(`Wrong! ❤️ ${gs.lives[myIdx]} lives left`,'err');
-      if(gs.lives[myIdx]<=0){ gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers(); }
+      toast(`Wrong! ❤️ ${gs.lives[myIdx]} left`,'err');
+      // game ends only when ALL players are out of lives
+      const allOut=Object.keys(gs.players).every(k=>(gs.lives[parseInt(k)]??3)<=0);
+      if(allOut){gs.status='finished';gs.finishedAt=Date.now();clearAllTimers();}
     } else {
       toast('Wrong — turn passes','err');
     }
+
     gs.turn=next;
-    setTimeout(()=>{ le?.classList.remove('wrong'); re?.classList.remove('wrong'); send({type:'state',state:gs}); updateRender(); if(gs.status==='finished')setTimeout(showResult,350); },400);
+    setTimeout(()=>{
+      le?.classList.remove('wrong'); re?.classList.remove('wrong');
+      // re-blur the wrong right card in hard/expert
+      if(gs.diff==='hard'||gs.diff==='expert'){
+        const cw=document.querySelector('#rc_'+r+' .cw');
+        if(cw) cw.style.filter='blur(7px)';
+      }
+      send({type:'state',state:gs}); updateRender();
+      if(gs.status==='finished') setTimeout(showResult,350);
+    },600);
   }
 }
 
-// ═══════════════════════════════════════════════════════
-//  RESULT
-// ═══════════════════════════════════════════════════════
-function showResult(){
-  clearAllTimers();
-  const hs=gs.scores.host, gs2=gs.scores.guest;
-  const myS=gs.scores[myRole], oppS=gs.scores[myRole==='host'?'guest':'host'];
-  const iWin=myS>oppS, tie=myS===oppS;
-  const secs=gs.finishedAt?Math.floor((gs.finishedAt-gs.startedAt)/1000):0;
-  const hName=myRole==='host'?myName:oppName, gName=myRole==='guest'?myName:oppName;
-  const hWin=hs>gs2, tieR=hs===gs2;
-
-  $('rTrophy').textContent=iWin?'🏆':tie?'🤝':'😅';
-  $('rTitle').textContent=iWin?'You won!':tie?"It's a tie!":'You lost!';
-  const modeMsg={classic:'',speed:' Under pressure!',blitz:' Lightning fast!',survival:' You survived!'}[gs.mode]||'';
-  $('rSub').textContent=(iWin?'Great vocab skills!'+modeMsg:tie?'Even match!':modeMsg+' Better luck next time!')+' Finished in '+secs+'s.';
-
-  $('rScores').innerHTML=`
-    <div class="rsc ${hWin||tieR?'win':''}">${hWin?'<div class="crown">👑</div>':''}<div class="rn">${hName}</div><div class="rv">${hs}</div></div>
-    <div class="rsc ${!hWin&&!tieR?'win':''}">${!hWin&&!tieR?'<div class="crown">👑</div>':''}<div class="rn">${gName}</div><div class="rv">${gs2}</div></div>`;
-
-  const myFinalStreak=myStreak;
-  $('rStats').innerHTML=`
-    <div class="res-stat"><strong>${secs}s</strong>duration</div>
-    <div class="res-stat"><strong>${gs.matched.length}/${gs.leftCards.length}</strong>pairs matched</div>
-    <div class="res-stat"><strong>${myFinalStreak}</strong>final streak</div>`;
-
-  go('sResult');
-  if(iWin) launchConfetti();
+// ═══════════════ POWER-UPS ═══════════════
+function usePowerup(type){
+  if(powerups[type]<=0) return;
+  powerups[type]--;
+  if(type==='freeze'){
+    const target=(myIdx+1)%gs.numPlayers;
+    send({type:'powerup',action:'freeze',target});
+    toast('❄️ Froze '+gs.players[target]+'!','info');
+  } else if(type==='hint'){
+    revealHint();
+  } else if(type==='shuffle'){
+    // send shuffle command — target is next player
+    const target=(myIdx+1)%gs.numPlayers;
+    send({type:'powerup',action:'shuffle_opp',target});
+    toast('🔀 Shuffled '+gs.players[target]+"'s cards!",'info');
+  }
+  renderPowerups();
 }
 
-// ═══════════════════════════════════════════════════════
-//  CONFETTI
-// ═══════════════════════════════════════════════════════
+function revealHint(){
+  const unmatched=gs.leftCards.filter(c=>!gs.matched.includes(c.id));
+  if(!unmatched.length) return;
+  const t=unmatched[Math.floor(Math.random()*unmatched.length)];
+  const el=$('rc_'+t.id); if(!el) return;
+  el.classList.add('hint-reveal');
+  const cw=el.querySelector('.cw'); if(cw) cw.style.filter='none';
+  toast('💡 Hint revealed!','info');
+  setTimeout(()=>{el.classList.remove('hint-reveal');if(gs.diff==='hard'||gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
+}
+
+// ═══════════════ RESULT ═══════════════
+function showResult(){
+  clearAllTimers();
+  const secs=gs.finishedAt?Math.floor((gs.finishedAt-gs.startedAt)/1000):0;
+  const np=gs.numPlayers;
+  // find winner (highest score)
+  let maxSc=-1, winnerIdx=0;
+  for(let i=0;i<np;i++){if((gs.scores[i]||0)>maxSc){maxSc=gs.scores[i]||0;winnerIdx=i;}}
+  const iWin=winnerIdx===myIdx;
+  const myScore=gs.scores[myIdx]||0;
+  const isTie=Object.values(gs.scores).filter(s=>s===maxSc).length>1;
+  $('rTrophy').textContent=isTie?'🤝':iWin?'🏆':'😅';
+  $('rTitle').textContent=isTie?"It's a tie!":iWin?'You won!':'You lost!';
+  $('rSub').textContent=(isTie?'Even match! ':iWin?'Great vocab skills! ':'Better luck next time! ')+'Finished in '+secs+'s.';
+  // scores sorted by score desc
+  const sorted=[...Array(np).keys()].sort((a,b)=>(gs.scores[b]||0)-(gs.scores[a]||0));
+  $('rScores').innerHTML=sorted.map(i=>{
+    const isW=!isTie&&i===winnerIdx;
+    return `<div class="rsc ${isW?'win':''}">${isW?'<div class="crown">👑</div>':''}
+      <div class="rn" style="color:${P_COLORS[i]}">${gs.players[i]||'P'+(i+1)}</div>
+      <div class="rv" style="color:${isW?'var(--yl)':P_COLORS[i]}">${gs.scores[i]||0}</div></div>`;
+  }).join('');
+  $('rStats').innerHTML=`
+    <div class="res-stat"><strong>${secs}s</strong>duration</div>
+    <div class="res-stat"><strong>${gs.matched.length}/${gs.leftCards.length}</strong>matched</div>
+    <div class="res-stat"><strong>${myScore}</strong>your score</div>`;
+  go('sResult');
+  if(iWin&&!isTie) launchConfetti();
+}
+
+// ═══════════════ CONFETTI ═══════════════
 function launchConfetti(){
   const canvas=$('confetti'); canvas.style.display='block';
   const ctx=canvas.getContext('2d');
-  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
-  const colors=['#6c63ff','#ff5fa0','#3fffa8','#ffd166','#ff9f43','#fff'];
-  const particles=Array.from({length:120},()=>({
-    x:Math.random()*canvas.width, y:-10,
-    w:Math.random()*8+4, h:Math.random()*14+6,
-    color:colors[Math.floor(Math.random()*colors.length)],
-    rot:Math.random()*360, rotV:(Math.random()-0.5)*8,
-    vx:(Math.random()-0.5)*4, vy:Math.random()*4+2, alpha:1
-  }));
-  let frame=0;
-  const anim=()=>{
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.rot+=p.rotV; p.alpha-=0.008; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180); ctx.globalAlpha=Math.max(0,p.alpha); ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); });
-    frame++;
-    if(frame<180) requestAnimationFrame(anim);
-    else{ canvas.style.display='none'; ctx.clearRect(0,0,canvas.width,canvas.height); }
-  };
+  canvas.width=innerWidth; canvas.height=innerHeight;
+  const cols=['#6c63ff','#ff5fa0','#3fffa8','#ffd166','#ff9f43','#fff'];
+  const pts=Array.from({length:120},()=>({x:Math.random()*canvas.width,y:-10,w:Math.random()*8+4,h:Math.random()*14+6,c:cols[Math.floor(Math.random()*cols.length)],r:Math.random()*360,rv:(Math.random()-.5)*8,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,a:1}));
+  let f=0;
+  const anim=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.a-=.008;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.globalAlpha=Math.max(0,p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});f++;if(f<180)requestAnimationFrame(anim);else{canvas.style.display='none';}};
   requestAnimationFrame(anim);
 }
 
-// ═══════════════════════════════════════════════════════
-//  REMATCH & LEAVE
-// ═══════════════════════════════════════════════════════
+// ═══════════════ REMATCH / LEAVE ═══════════════
 function requestRematch(){
-  if(myRole==='host'){
-    const pairs=pickPairs();
-    gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores:{host:0,guest:0},lives:{host:3,guest:3},turn:'host',status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null};
-    send({type:'rematch',state:gs}); myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
-    startRender(); go('sGame');
-  } else toast('Waiting for host to restart…');
+  if(myRole!=='host'){toast('Waiting for host to restart…');return;}
+  const np=numP(); const pairs=pickPairs(chosenPairs||6);
+  const scores={}, lives={};
+  for(let i=0;i<np;i++){scores[i]=0;lives[i]=3;}
+  gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null,maxPlayers};
+  send({type:'rematch',state:gs});
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
+  startRender(); go('sGame');
 }
 
 function leaveRoom(){
   clearAllTimers();
-  if(ablyChannel){ try{ ablyChannel.unsubscribe(); }catch(e){} ablyChannel=null; }
-  if(ablyClient){ try{ ablyClient.close(); }catch(e){} ablyClient=null; }
-  connected=false; myRole=null; roomCode=''; gs=null; selL=null; selR=null;
-  peer=null; conn=null;
+  // Notify others before disconnecting
+  if(ablyChannel&&gs&&gs.status==='playing'){
+    send({type:'player_left', idx:myIdx, name:myName, numPlayers:gs.numPlayers});
+  }
+  if(ablyChannel){try{ablyChannel.unsubscribe();}catch(e){}}
+  if(ablyClient){try{ablyClient.close();}catch(e){}}
+  ablyClient=null; ablyChannel=null;
+  players={}; gs=null; selL=null; selR=null; myRole=''; roomCode='';
   hideBadge(); go('sHome');
 }
 
-// ═══════════════════════════════════════════════════════
-//  KEYBOARD
-// ═══════════════════════════════════════════════════════
-$('cName').addEventListener('keydown',e=>{ if(e.key==='Enter') createRoom(); });
-$('jCode').addEventListener('keydown',e=>{ if(e.key==='Enter') joinRoom(); });
-$('jName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('jCode').focus(); });
+// ═══════════════ KEYBOARD ═══════════════
+$('cName').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom();});
+$('jCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom();});
+$('jName').addEventListener('keydown',e=>{if(e.key==='Enter')$('jCode').focus();});
 </script>
 </body>
 </html>
