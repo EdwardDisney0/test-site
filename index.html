@@ -255,11 +255,27 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
         </div>
       </div>
 
+      <div class="lbl">Number of pairs</div>
+      <div style="margin-bottom:.9rem">
+        <div style="display:flex;align-items:center;gap:12px">
+          <input type="range" id="pairsSlider" min="6" max="12" step="2" value="6" oninput="updatePairsLabel(this.value)" style="flex:1">
+          <span id="pairsLabel" style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;min-width:28px;text-align:center;color:var(--acl)">6</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--m);margin-top:4px"><span>6</span><span>8</span><span>10</span><span>12</span></div>
+      </div>
+
+      <div class="lbl">Max players</div>
+      <div style="display:flex;gap:7px;margin-bottom:.9rem">
+        <div class="opt-card chosen" data-mp="2" onclick="pickMaxPlayers(this)" style="flex:1;text-align:center"><div class="opt-title">2</div><div class="opt-sub">1 vs 1</div></div>
+        <div class="opt-card" data-mp="3" onclick="pickMaxPlayers(this)" style="flex:1;text-align:center"><div class="opt-title">3</div><div class="opt-sub">Free for all</div></div>
+        <div class="opt-card" data-mp="4" onclick="pickMaxPlayers(this)" style="flex:1;text-align:center"><div class="opt-title">4</div><div class="opt-sub">Free for all</div></div>
+      </div>
+
       <div class="lbl">Difficulty</div>
       <div class="setup-grid" id="diffGrid">
         <div class="opt-card chosen" data-diff="easy" onclick="pickDiff(this)">
           <div class="opt-title">🟢 Easy</div>
-          <div class="opt-sub">Hints + Russian translation</div>
+          <div class="opt-sub">Full meaning shown on card</div>
         </div>
         <div class="opt-card" data-diff="medium" onclick="pickDiff(this)">
           <div class="opt-title">🟡 Medium</div>
@@ -368,78 +384,78 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 // ═══════════════════════════════════════════════════════
 const PAIRS = [
   // ── FOOD & NATURE ──
-  {id:'chicken',   word:'a chicken',      unc:'chicken — meat / poultry (food)',            ru:'🐔 курица (животное) / 🍗 курятина'},
-  {id:'fish',      word:'a fish',         unc:'fish — seafood in general',                  ru:'🐟 рыба (одна) / 🍣 рыба (еда)'},
-  {id:'lamb',      word:'a lamb',         unc:'lamb — meat from a young sheep',             ru:'🐑 ягнёнок / 🥩 баранина'},
-  {id:'turkey',    word:'a turkey',       unc:'turkey — the meat of a turkey',              ru:'🦃 индейка (птица) / 🍖 индейка (мясо)'},
-  {id:'coffee',    word:'a coffee',       unc:'coffee — the drink in general',              ru:'☕ чашка кофе / ☕ кофе (вещество)'},
-  {id:'tea',       word:'a tea',          unc:'tea — the drink in general',                 ru:'🍵 чашка чая / 🍃 чай (в целом)'},
-  {id:'beer',      word:'a beer',         unc:'beer — alcohol in general',                  ru:'🍺 кружка пива / 🍻 пиво (напиток)'},
-  {id:'wine',      word:'a wine',         unc:'wine — alcohol in general',                  ru:'🍷 бокал вина / 🍾 вино (напиток)'},
-  {id:'cake',      word:'a cake',         unc:'cake — baked goods in general',              ru:'🎂 торт (один) / 🍰 торт (выпечка)'},
-  {id:'chocolate', word:'a chocolate',    unc:'chocolate — the sweet material',             ru:'🍫 конфета / 🍫 шоколад (вещество)'},
-  {id:'wood',      word:'a wood',         unc:'wood — timber / the material',               ru:'🌲 лес / 🪵 древесина (материал)'},
-  {id:'stone',     word:'a stone',        unc:'stone — the rock material',                  ru:'💎 камень (один) / 🏔️ камень (материал)'},
-  {id:'iron',      word:'an iron',        unc:'iron — the metal element',                   ru:'👔 утюг / ⚙️ железо (металл)'},
+  {id:'chicken',   word:'a chicken',      unc:'chicken — meat / poultry (food)'},
+  {id:'fish',      word:'a fish',         unc:'fish — seafood in general'},
+  {id:'lamb',      word:'a lamb',         unc:'lamb — meat from a young sheep'},
+  {id:'turkey',    word:'a turkey',       unc:'turkey — the meat of a turkey'},
+  {id:'coffee',    word:'a coffee',       unc:'coffee — the drink in general'},
+  {id:'tea',       word:'a tea',          unc:'tea — the drink in general'},
+  {id:'beer',      word:'a beer',         unc:'beer — alcohol in general'},
+  {id:'wine',      word:'a wine',         unc:'wine — alcohol in general'},
+  {id:'cake',      word:'a cake',         unc:'cake — baked goods in general'},
+  {id:'chocolate', word:'a chocolate',    unc:'chocolate — the sweet material'},
+  {id:'wood',      word:'a wood',         unc:'wood — timber / the material'},
+  {id:'stone',     word:'a stone',        unc:'stone — the rock material'},
+  {id:'iron',      word:'an iron',        unc:'iron — the metal element'},
   // ── HOUSEHOLD & OBJECTS ──
-  {id:'glass',     word:'a glass',        unc:'glass — the transparent material',           ru:'🥤 стакан / 🪟 стекло (материал)'},
-  {id:'paper',     word:'a paper',        unc:'paper — the writing material',               ru:'📰 статья / газета / 📄 бумага (материал)'},
-  {id:'fire',      word:'a fire',         unc:'fire — flames in general',                   ru:'🔥 костёр / пожар / 🔥 огонь (стихия)'},
-  {id:'light',     word:'a light',        unc:'light — illumination / brightness',          ru:'💡 лампа / ☀️ свет (вещество)'},
-  {id:'noise',     word:'a noise',        unc:'noise — sound / background sound',           ru:'📢 шум (конкретный) / 🔊 шум (в целом)'},
-  {id:'sound',     word:'a sound',        unc:'sound — audio in general',                   ru:'🎵 звук (один) / 🔈 звук (в целом)'},
-  {id:'paint',     word:'a paint',        unc:'paint — the liquid coating material',        ru:'🖼️ краска (оттенок) / 🪣 краска (материал)'},
-  {id:'cloth',     word:'a cloth',        unc:'cloth — fabric / textile material',          ru:'🧣 тряпка / 🧵 ткань (материал)'},
-  {id:'tin',       word:'a tin',          unc:'tin — the metal material',                   ru:'🥫 банка (жестяная) / ⚙️ олово (металл)'},
-  {id:'copper',    word:'a copper',       unc:'copper — the metal element',                 ru:'🪙 монета / медяк / 🔧 медь (металл)'},
+  {id:'glass',     word:'a glass',        unc:'glass — the transparent material'},
+  {id:'paper',     word:'a paper',        unc:'paper — the writing material'},
+  {id:'fire',      word:'a fire',         unc:'fire — flames in general'},
+  {id:'light',     word:'a light',        unc:'light — illumination / brightness'},
+  {id:'noise',     word:'a noise',        unc:'noise — sound / background sound'},
+  {id:'sound',     word:'a sound',        unc:'sound — audio in general'},
+  {id:'paint',     word:'a paint',        unc:'paint — the liquid coating material'},
+  {id:'cloth',     word:'a cloth',        unc:'cloth — fabric / textile material'},
+  {id:'tin',       word:'a tin',          unc:'tin — the metal material'},
+  {id:'copper',    word:'a copper',       unc:'copper — the metal element'},
   // ── ABSTRACT ──
-  {id:'work',      word:'a work',         unc:'work — effort / labour in general',          ru:'🎨 произведение / 💼 работа (в целом)'},
-  {id:'experience',word:'an experience',  unc:'experience — knowledge over time',           ru:'🌟 событие / 🧠 опыт (в целом)'},
-  {id:'time',      word:'a time',         unc:'time — the general concept of duration',     ru:'🎉 раз / момент / ⏰ время (в целом)'},
-  {id:'room',      word:'a room',         unc:'room — available space',                     ru:'🚪 комната / 📦 место (пространство)'},
-  {id:'life',      word:'a life',         unc:'life — the concept of being alive',          ru:'🌱 жизнь (одна) / ✨ жизнь (понятие)'},
-  {id:'love',      word:'a love',         unc:'love — the feeling in general',              ru:'💌 любовь (человек) / ❤️ любовь (чувство)'},
-  {id:'fear',      word:'a fear',         unc:'fear — the emotion in general',              ru:'😨 страх (конкретный) / 😰 страх (чувство)'},
-  {id:'hope',      word:'a hope',         unc:'hope — optimism in general',                 ru:'🌈 надежда (одна) / 🙏 надежда (в целом)'},
-  {id:'dream',     word:'a dream',        unc:'dream — the concept of dreaming',            ru:'💭 сон / мечта / ✨ сон (явление)'},
-  {id:'thought',   word:'a thought',      unc:'thought — the process of thinking',          ru:'💡 мысль (одна) / 🧠 мышление (процесс)'},
-  {id:'knowledge', word:'a knowledge',    unc:'knowledge — information in general',         ru:'📚 знание (область) / 🎓 знания (в целом)'},
-  {id:'beauty',    word:'a beauty',       unc:'beauty — attractiveness in general',         ru:'💄 красавица / 🌸 красота (понятие)'},
-  {id:'success',   word:'a success',      unc:'success — achievement in general',           ru:'🏆 успех (один) / 🌟 успех (понятие)'},
-  {id:'failure',   word:'a failure',      unc:'failure — lack of success in general',       ru:'❌ провал (один) / 😔 неудача (в целом)'},
-  {id:'pleasure',  word:'a pleasure',     unc:'pleasure — enjoyment in general',            ru:'😊 удовольствие / 🎉 удовольствие (чувство)'},
-  {id:'surprise',  word:'a surprise',     unc:'surprise — the feeling of being surprised',  ru:'🎁 сюрприз / 😮 удивление (чувство)'},
+  {id:'work',      word:'a work',         unc:'work — effort / labour in general'},
+  {id:'experience',word:'an experience',  unc:'experience — knowledge over time'},
+  {id:'time',      word:'a time',         unc:'time — the general concept of duration'},
+  {id:'room',      word:'a room',         unc:'room — available space'},
+  {id:'life',      word:'a life',         unc:'life — the concept of being alive'},
+  {id:'love',      word:'a love',         unc:'love — the feeling in general'},
+  {id:'fear',      word:'a fear',         unc:'fear — the emotion in general'},
+  {id:'hope',      word:'a hope',         unc:'hope — optimism in general'},
+  {id:'dream',     word:'a dream',        unc:'dream — the concept of dreaming'},
+  {id:'thought',   word:'a thought',      unc:'thought — the process of thinking'},
+  {id:'knowledge', word:'a knowledge',    unc:'knowledge — information in general'},
+  {id:'beauty',    word:'a beauty',       unc:'beauty — attractiveness in general'},
+  {id:'success',   word:'a success',      unc:'success — achievement in general'},
+  {id:'failure',   word:'a failure',      unc:'failure — lack of success in general'},
+  {id:'pleasure',  word:'a pleasure',     unc:'pleasure — enjoyment in general'},
+  {id:'surprise',  word:'a surprise',     unc:'surprise — the feeling of being surprised'},
   // ── NATURE & ELEMENTS ──
-  {id:'hair',      word:'a hair',         unc:'hair — all the hair on your head',           ru:'💈 волосок (один) / 💇 волосы (в целом)'},
-  {id:'sand',      word:'a sand',         unc:'sand — granular material on beaches',        ru:'🏖️ пляж (тип) / 🌊 песок (материал)'},
-  {id:'water',     word:'a water',        unc:'water — the liquid H₂O',                     ru:'💧 вода (порция) / 🌊 вода (вещество)'},
-  {id:'snow',      word:'a snow',         unc:'snow — frozen precipitation in general',     ru:'❄️ снегопад (один) / ⛄ снег (вещество)'},
-  {id:'rain',      word:'a rain',         unc:'rain — precipitation in general',            ru:'🌧️ ливень (один) / 🌂 дождь (явление)'},
-  {id:'wind',      word:'a wind',         unc:'wind — moving air in general',               ru:'💨 порыв ветра / 🌬️ ветер (явление)'},
-  {id:'cloud',     word:'a cloud',        unc:'cloud — water vapour in the sky',            ru:'☁️ облако (одно) / 🌥️ облачность (в целом)'},
-  {id:'fog',       word:'a fog',          unc:'fog — thick mist in general',                ru:'🌫️ туман (конкретный) / 🌁 туман (явление)'},
-  {id:'storm',     word:'a storm',        unc:'storm — bad weather in general',             ru:'⛈️ буря (одна) / 🌪️ шторм (явление)'},
-  {id:'wave',      word:'a wave',         unc:'wave — the physics of waves',                ru:'🌊 волна (одна) / 📡 волны (физика)'},
+  {id:'hair',      word:'a hair',         unc:'hair — all the hair on your head'},
+  {id:'sand',      word:'a sand',         unc:'sand — granular material on beaches'},
+  {id:'water',     word:'a water',        unc:'water — the liquid H₂O'},
+  {id:'snow',      word:'a snow',         unc:'snow — frozen precipitation in general'},
+  {id:'rain',      word:'a rain',         unc:'rain — precipitation in general'},
+  {id:'wind',      word:'a wind',         unc:'wind — moving air in general'},
+  {id:'cloud',     word:'a cloud',        unc:'cloud — water vapour in the sky'},
+  {id:'fog',       word:'a fog',          unc:'fog — thick mist in general'},
+  {id:'storm',     word:'a storm',        unc:'storm — bad weather in general'},
+  {id:'wave',      word:'a wave',         unc:'wave — the physics of waves'},
   // ── PEOPLE & SOCIETY ──
-  {id:'language',  word:'a language',     unc:'language — communication in general',        ru:'🗣️ язык (один) / 📖 язык (в целом)'},
-  {id:'culture',   word:'a culture',      unc:'culture — civilisation in general',          ru:'🎭 культура (одна) / 🌍 культура (понятие)'},
-  {id:'history',   word:'a history',      unc:'history — the study of past events',         ru:'📜 история (одна) / 🏛️ история (наука)'},
-  {id:'art',       word:'an art',         unc:'art — creative expression in general',       ru:'🖼️ искусство (вид) / 🎨 искусство (в целом)'},
-  {id:'sport',     word:'a sport',        unc:'sport — physical activity in general',       ru:'⚽ вид спорта / 🏃 спорт (в целом)'},
-  {id:'business',  word:'a business',     unc:'business — commerce in general',             ru:'🏪 бизнес (компания) / 💼 бизнес (в целом)'},
-  {id:'crime',     word:'a crime',        unc:'crime — illegal activity in general',        ru:'🔪 преступление (одно) / ⚖️ преступность (в целом)'},
-  {id:'medicine',  word:'a medicine',     unc:'medicine — the science of health',           ru:'💊 лекарство (одно) / 🏥 медицина (наука)'},
-  {id:'technology',word:'a technology',   unc:'technology — tech in general',               ru:'💻 технология (одна) / 🔬 технологии (в целом)'},
-  {id:'science',   word:'a science',      unc:'science — knowledge through experiment',     ru:'🔭 наука (одна) / 🧪 наука (в целом)'},
+  {id:'language',  word:'a language',     unc:'language — communication in general'},
+  {id:'culture',   word:'a culture',      unc:'culture — civilisation in general'},
+  {id:'history',   word:'a history',      unc:'history — the study of past events'},
+  {id:'art',       word:'an art',         unc:'art — creative expression in general'},
+  {id:'sport',     word:'a sport',        unc:'sport — physical activity in general'},
+  {id:'business',  word:'a business',     unc:'business — commerce in general'},
+  {id:'crime',     word:'a crime',        unc:'crime — illegal activity in general'},
+  {id:'medicine',  word:'a medicine',     unc:'medicine — the science of health'},
+  {id:'technology',word:'a technology',   unc:'technology — tech in general'},
+  {id:'science',   word:'a science',      unc:'science — knowledge through experiment'},
   // ── ACTIONS AS NOUNS ──
-  {id:'laugh',     word:'a laugh',        unc:'laugh — laughter in general',                ru:'😂 смех (один раз) / 🤣 смех (явление)'},
-  {id:'cry',       word:'a cry',          unc:'cry — crying / weeping in general',          ru:'😢 плач (один) / 😭 плач (в целом)'},
-  {id:'talk',      word:'a talk',         unc:'talk — conversation in general',             ru:'🗣️ беседа (одна) / 💬 разговор (в целом)'},
-  {id:'run',       word:'a run',          unc:'run — running in general',                   ru:'🏃 пробежка (одна) / 🏅 бег (в целом)'},
-  {id:'swim',      word:'a swim',         unc:'swim — swimming in general',                 ru:'🏊 заплыв (один) / 💦 плавание (в целом)'},
-  {id:'look',      word:'a look',         unc:'look — appearance in general',               ru:'👀 взгляд (один) / 👁️ вид / внешность'},
-  {id:'read',      word:'a read',         unc:'read — reading in general',                  ru:'📖 чтение (сеанс) / 📚 чтение (в целом)'},
-  {id:'walk',      word:'a walk',         unc:'walk — walking in general',                  ru:'🚶 прогулка (одна) / 👟 ходьба (в целом)'},
+  {id:'laugh',     word:'a laugh',        unc:'laugh — laughter in general'},
+  {id:'cry',       word:'a cry',          unc:'cry — crying / weeping in general'},
+  {id:'talk',      word:'a talk',         unc:'talk — conversation in general'},
+  {id:'run',       word:'a run',          unc:'run — running in general'},
+  {id:'swim',      word:'a swim',         unc:'swim — swimming in general'},
+  {id:'look',      word:'a look',         unc:'look — appearance in general'},
+  {id:'read',      word:'a read',         unc:'read — reading in general'},
+  {id:'walk',      word:'a walk',         unc:'walk — walking in general'},
 ];
 
 // Pick random N pairs from the full bank each game
@@ -448,14 +464,15 @@ function pickPairs(n=6){ return shuffle(PAIRS).slice(0,n); }
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
-let peer=null, conn=null, myRole=null, myName='', oppName='', roomCode='';
+let peer=null, conn=null, myRole=null, myName='', roomCode='';
+let players={};   // { 0:'Alice', 1:'Bob', 2:'Carol', 3:'Dan' }
+let myIdx=0;      // my numeric index 0-3
 let gs=null, selL=null, selR=null, connected=false;
 let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
-let myStreak=0, oppStreak=0;
-let powerups = {freeze:2, hint:2};
+let myStreak=0;
+let powerups={freeze:2,hint:2};
 let frozenUntil=0;
-
-let chosenMode='classic', chosenDiff='easy';
+let chosenMode='classic', chosenDiff='easy', chosenPairs=6, chosenMaxPlayers=2;
 
 // ═══════════════════════════════════════════════════════
 //  UTILS
@@ -469,6 +486,17 @@ const hideBadge = () => $('roomBadge').style.display='none';
 
 function pickMode(el){ document.querySelectorAll('#modeGrid .opt-card').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenMode=el.dataset.mode; }
 function pickDiff(el){ document.querySelectorAll('#diffGrid .opt-card').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenDiff=el.dataset.diff; }
+function updatePairsLabel(v){ $('pairsLabel').textContent=v; chosenPairs=parseInt(v); }
+function pickMaxPlayers(el){ document.querySelectorAll('[data-mp]').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenMaxPlayers=parseInt(el.dataset.mp); }
+
+// Per-player colors
+const AV_BG   =['rgba(108,99,255,.18)','rgba(255,95,160,.18)','rgba(63,255,168,.15)','rgba(255,209,102,.15)'];
+const AV_COLOR=['var(--acl)','var(--pk)','var(--gr)','var(--yl)'];
+const TURN_CLS =['tt1','tt2','tt3','tt4'];
+const SC_NUM_COLOR=['var(--acl)','var(--pk)','var(--gr)','var(--yl)'];
+
+function playerName(i){ return players[i]||('P'+(i+1)); }
+function myTurn(){ return gs && gs.turn===myIdx; }
 
 // ═══════════════════════════════════════════════════════
 //  ABLY — works across any network / mobile / different ISPs
@@ -499,63 +527,60 @@ function subscribeChannel(channelName){
 }
 
 async function createRoom(){
-  const name = $('cName').value.trim();
-  if(!name){ toast('Enter your name','err'); return; }
-  myName = name; myRole = 'host';
-  const btn = $('createBtn'); btn.disabled = true; btn.textContent = 'Connecting…';
-  const errEl = $('createErr'); errEl.style.display = 'none';
-  const code = String(Math.floor(1000 + Math.random()*9000));
-  roomCode = code;
-  try {
-    await initAbly();
-    subscribeChannel('dmm-room-' + code);
-    connected = true;
-  } catch(e) {
-    btn.disabled = false; btn.textContent = 'Create Room';
-    errEl.textContent = 'Connection failed. Check your internet.'; errEl.style.display = ''; return;
-  }
-  btn.disabled = false; btn.textContent = 'Create Room';
-  showBadge('Room ' + code);
-  go('sLobby'); renderLobby(false);
+  const name=$('cName').value.trim();
+  if(!name){toast('Enter your name','err');return;}
+  myName=name; myRole='host'; myIdx=0;
+  players={0:myName};
+  const btn=$('createBtn'); btn.disabled=true; btn.textContent='Connecting…';
+  const errEl=$('createErr'); errEl.style.display='none';
+  const code=String(Math.floor(1000+Math.random()*9000)); roomCode=code;
+  try{ await initAbly(); subscribeChannel('dmm-room-'+code); connected=true; }
+  catch(e){ btn.disabled=false; btn.textContent='Create Room'; errEl.textContent='Connection failed. Check your internet.'; errEl.style.display=''; return; }
+  btn.disabled=false; btn.textContent='Create Room';
+  showBadge('Room '+code); go('sLobby'); renderLobby();
 }
 
 async function joinRoom(){
-  const name = $('jName').value.trim(), code = $('jCode').value.trim();
-  const errEl = $('joinErr'); errEl.style.display = 'none';
-  if(!name){ toast('Enter your name','err'); return; }
-  if(!code || code.length < 4){ toast('Enter 4-digit code','err'); return; }
-  myName = name; myRole = 'guest'; roomCode = code;
-  const btn = $('joinBtn'); btn.disabled = true; btn.textContent = 'Connecting…';
-  try {
-    await initAbly();
-    subscribeChannel('dmm-room-' + code);
-    connected = true;
-  } catch(e) {
-    btn.disabled = false; btn.textContent = 'Join';
-    errEl.textContent = 'Connection failed. Check your internet.'; errEl.style.display = ''; return;
-  }
-  btn.disabled = false; btn.textContent = 'Join';
-  showBadge('Room ' + code);
-  go('sLobby'); renderLobby(false);
-  // Guest announces themselves
-  send({ type: 'hello', name: myName });
+  const name=$('jName').value.trim(), code=$('jCode').value.trim();
+  const errEl=$('joinErr'); errEl.style.display='none';
+  if(!name){toast('Enter your name','err');return;}
+  if(!code||code.length<4){toast('Enter 4-digit code','err');return;}
+  myName=name; myRole='guest'; roomCode=code;
+  players={};
+  const btn=$('joinBtn'); btn.disabled=true; btn.textContent='Connecting…';
+  try{ await initAbly(); subscribeChannel('dmm-room-'+code); connected=true; }
+  catch(e){ btn.disabled=false; btn.textContent='Join'; errEl.textContent='Connection failed. Check your internet.'; errEl.style.display=''; return; }
+  btn.disabled=false; btn.textContent='Join';
+  showBadge('Room '+code); go('sLobby'); renderLobby();
+  send({type:'hello', name:myName});
 }
 
 // ═══════════════════════════════════════════════════════
 //  LOBBY
 // ═══════════════════════════════════════════════════════
-function renderLobby(guestJoined){
+function renderLobby(){
   $('lobbyCode').textContent=roomCode;
   const isHost=myRole==='host';
-  $('slots').innerHTML=`
-    <div class="slot on me"><div class="av av1">${myName[0].toUpperCase()}</div><div><div class="sn">${myName} <span style="color:var(--m);font-size:10px">(you)</span></div><div class="ss">${isHost?'Host':'Guest'}</div></div><div class="dot dot-on"></div></div>
-    <div class="slot ${guestJoined?'on':''}"><div class="av av2">${guestJoined?oppName[0].toUpperCase():'?'}</div><div><div class="sn">${guestJoined?oppName+(myRole==='guest'?' <span style="color:var(--m);font-size:10px">(you)</span>':''):'Waiting...'}</div><div class="ss">${isHost?'Guest':'Host'}</div></div><div class="dot ${guestJoined?'dot-on dot-pulse':'dot-off'}"></div></div>`;
+  const maxP=gs?gs.maxPlayers:chosenMaxPlayers;
+  const slots=$('slots'); slots.innerHTML='';
+  for(let i=0;i<maxP;i++){
+    const name=players[i]||null;
+    const isMe=(myIdx===i&&name===myName);
+    slots.innerHTML+=`<div class="slot ${name?'on':''} ${isMe?'me':''}">
+      <div class="av" style="background:${AV_BG[i]};color:${AV_COLOR[i]}">${name?name[0].toUpperCase():'?'}</div>
+      <div><div class="sn">${name?(name+(isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':'')):'Waiting...'}</div>
+      <div class="ss">${i===0?'Host':'Player '+(i+1)}</div></div>
+      <div class="dot ${name?'dot-on dot-pulse':'dot-off'}"></div></div>`;
+  }
   const sa=$('startArea'), li=$('lobbyInfo');
+  const joined=Object.keys(players).length;
   if(isHost){
-    sa.innerHTML=guestJoined?`<button class="btn bp bfull" onclick="startGame()">Start Game ▶</button>`:`<div style="font-size:12px;color:var(--m)">Waiting for friend to join…</div>`;
-    li.textContent=guestJoined?oppName+' joined! Start when ready.':'Share the code above with your friend.';
+    sa.innerHTML=joined>=2
+      ?`<button class="btn bp bfull" onclick="startGame()">Start Game ▶ (${joined}/${maxP})</button>`
+      :`<div style="font-size:12px;color:var(--m)">Need at least 2 players…</div>`;
+    li.textContent=joined>=2?'Ready! Start now or wait for more.':'Share the code with your friends.';
   }else{
-    sa.innerHTML=`<div style="font-size:12px;color:var(--m)">Waiting for host to start…</div>`;
+    sa.innerHTML=`<div style="font-size:12px;color:var(--m)">Waiting for host to start… (${joined}/${maxP})</div>`;
     li.textContent='Connected! Host will start the game.';
   }
 }
@@ -567,25 +592,48 @@ function onData(msg){
   switch(msg.type){
     case 'hello':
       if(myRole==='host'){
-        oppName=msg.name; renderLobby(true);
-        // send back our name so guest knows we exist
-        send({type:'hello_ack', name:myName});
+        const taken=Object.keys(players).length;
+        if(taken>=chosenMaxPlayers){send({type:'room_full'});return;}
+        players[taken]=msg.name;
+        send({type:'lobby_state', players, maxPlayers:chosenMaxPlayers});
+        toast(msg.name+' joined!','ok');
+        renderLobby();
       }
       break;
-    case 'hello_ack':
-      if(myRole==='guest'){
-        oppName=msg.name; renderLobby(true);
-      }
+    case 'lobby_state':
+      // numeric keys come as strings over JSON, convert
+      players={};
+      Object.entries(msg.players).forEach(([k,v])=>players[parseInt(k)]=v);
+      chosenMaxPlayers=msg.maxPlayers;
+      // find my index
+      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+      renderLobby();
       break;
-    case 'start': gs=msg.state; myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0; startRender(); go('sGame'); break;
-    case 'state': gs=msg.state; oppStreak=msg.oppStreak||0; updateRender(); if(gs.status==='finished') setTimeout(showResult,350); break;
+    case 'room_full':
+      toast('Room is full!','err'); leaveRoom(); break;
+    case 'start':
+      gs=msg.state;
+      players={};
+      Object.entries(gs.players).forEach(([k,v])=>players[parseInt(k)]=v);
+      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+      myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
+      startRender(); go('sGame'); break;
+    case 'state':
+      gs=msg.state; updateRender();
+      if(gs.status==='finished') setTimeout(showResult,350); break;
     case 'powerup': handleOppPowerup(msg); break;
-    case 'rematch': gs=msg.state; myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0; startRender(); go('sGame'); break;
+    case 'rematch':
+      gs=msg.state;
+      players={};
+      Object.entries(gs.players).forEach(([k,v])=>players[parseInt(k)]=v);
+      Object.entries(players).forEach(([k,v])=>{ if(v===myName) myIdx=parseInt(k); });
+      myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
+      startRender(); go('sGame'); break;
   }
 }
 
 function handleOppPowerup(msg){
-  if(msg.action==='freeze'){
+  if(msg.action==='freeze'&&msg.target===myIdx){
     frozenUntil=Date.now()+(msg.duration||8000);
     toast('❄️ You are frozen for 8s!','info');
     renderScoreBar();
@@ -596,23 +644,24 @@ function handleOppPowerup(msg){
 //  GAME START
 // ═══════════════════════════════════════════════════════
 function startGame(){
-  const pairs=pickPairs();
+  const n=chosenPairs||6;
+  const pairs=pickPairs(n);
+  const numP=Object.keys(players).length;
+  const scores={}, lives={};
+  for(let i=0;i<numP;i++){scores[i]=0; lives[i]=3;}
   gs={
-    leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
-    rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc,ru:p.ru}))),
-    matched:[],
-    scores:{host:0,guest:0},
-    lives:{host:3,guest:3},
-    turn:'host',
-    status:'playing',
-    startedAt:Date.now(),
-    finishedAt:null,
-    mode:chosenMode,
-    diff:chosenDiff,
+    leftCards: shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
+    rightCards: shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),
+    matched:[], scores, lives,
+    turn:0, numPlayers:numP,
+    players: {...players},   // snapshot
+    status:'playing', startedAt:Date.now(), finishedAt:null,
+    mode:chosenMode, diff:chosenDiff,
     blitzEnd:chosenMode==='blitz'?Date.now()+60000:null,
+    maxPlayers:chosenMaxPlayers,
   };
   send({type:'start',state:gs});
-  myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
+  myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
   startRender(); go('sGame');
 }
 
@@ -661,21 +710,16 @@ function startRender(){
 function makeCard(c, side){
   const d=document.createElement('div');
   const isM=gs.matched.includes(c.id);
-  const notMine=gs.turn!==myRole;
+  const notMine=gs.turn!==myIdx;
   const isFrozen=Date.now()<frozenUntil;
   d.className='card'+(isM?' matched dis':'')+(notMine&&!isM?' dis':'')+(isFrozen&&!isM?' dis':'');
   d.id=(side==='l'?'lc_':'rc_')+c.id;
-
   if(side==='l'){
-    const hint=gs.diff==='easy'?`<div class="hint-txt">${PAIRS.find(p=>p.id===c.id)?.ru||''}</div>`:'';
-    d.innerHTML=`<div class="cw">${c.word}</div><span class="badge bc">countable</span>${hint}<span class="chk">✓</span>`;
+    d.innerHTML=`<div class="cw">${c.word}</div><span class="badge bc">countable</span><span class="chk">✓</span>`;
     if(!isM) d.onclick=()=>selectL(c.id);
   } else {
     const isHard=gs.diff==='hard'||gs.diff==='expert';
-    const txt=isHard?'???':c.meaning;
-    const blurClass=isHard?'hidden':'';
-    const hint=gs.diff==='easy'?`<div class="hint-txt">${PAIRS.find(p=>p.id===c.id)?.ru.split('/')[1]?.trim()||''}</div>`:'';
-    d.innerHTML=`<div class="cw ${blurClass}" id="cwrc_${c.id}">${isHard?c.meaning:c.meaning}</div><span class="badge bu">uncountable</span>${hint}<span class="chk">✓</span>`;
+    d.innerHTML=`<div class="cw" id="cwrc_${c.id}">${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
     if(isHard){ const el=d.querySelector('.cw'); el.style.filter='blur(7px)'; el.style.userSelect='none'; }
     if(!isM) d.onclick=()=>selectR(c.id);
   }
@@ -689,13 +733,13 @@ function updateRender(){
     if(r){r.className='card matched dis';r.onclick=null;}
     if(c) c.classList.add('on');
   });
-  const mine=gs.turn===myRole;
+  const mine=gs.turn===myIdx;
   const isFrozen=Date.now()<frozenUntil;
-  gs.leftCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('lc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectL(c.id);}else{el.classList.add('dis');el.onclick=null;} }}});
-  gs.rightCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('rc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectR(c.id);}else{el.classList.add('dis');el.onclick=null;} }}});
+  gs.leftCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('lc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectL(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
+  gs.rightCards.forEach(c=>{ if(!gs.matched.includes(c.id)){ const el=document.getElementById('rc_'+c.id); if(el){ if(mine&&!isFrozen){el.classList.remove('dis');el.onclick=()=>selectR(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
   renderScoreBar(); renderStatus();
   $('pLeft').textContent=gs.leftCards.length-gs.matched.length;
-  if(gs.mode==='speed'){ clearTurnTimer(); if(gs.turn===myRole) startTurnTimer(); }
+  if(gs.mode==='speed'){ clearTurnTimer(); if(gs.turn===myIdx) startTurnTimer(); }
 }
 
 function renderStatsBar(){
@@ -710,47 +754,37 @@ function renderStatsBar(){
 }
 
 function renderScoreBar(){
-  const hs=gs.scores.host, gs2=gs.scores.guest;
-  const hName=myRole==='host'?myName:oppName, gName=myRole==='guest'?myName:oppName;
-  const ht=gs.turn==='host', gt=gs.turn==='guest';
-  const isFrozen=Date.now()<frozenUntil;
-  const hLives=gs.lives?.host??3, gLives=gs.lives?.guest??3;
+  const numP=gs.numPlayers||Object.keys(players).length;
   const showLives=gs.mode==='survival';
-  const myStreakBadge=myStreak>=3?`<span class="streak-badge">🔥 ${myStreak} streak</span>`:'';
-  const oppStreakBadge=oppStreak>=3?`<span class="streak-badge">🔥 ${oppStreak} streak</span>`:'';
-  const hFrozen=myRole==='guest'&&isFrozen, gFrozen=myRole==='host'&&isFrozen;
-
-  const livesHTML = r => {
-    if(!showLives) return '';
-    const n=r==='host'?hLives:gLives;
-    return '<div class="lives">'+[...Array(3)].map((_,i)=>`<span class="heart${i>=n?' lost':''}">❤️</span>`).join('')+'</div>';
-  };
-
-  $('scoreBar').innerHTML=`
-    <div class="sc ${ht?'act':''} ${hFrozen?'frozen':''}">
-      <div class="av av1" style="width:26px;height:26px;font-size:11px">${hName[0].toUpperCase()}</div>
-      <div class="scname">${hName}${myRole==='host'?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
-      ${livesHTML('host')}${myRole==='host'?myStreakBadge:oppStreakBadge}
-      ${ht?'<span class="ttag tt1">turn</span>':''}
-      ${hFrozen?'<span class="frozen-icon">❄️</span>':''}
-      <div class="scnum">${hs}</div>
-    </div>
-    <div class="sc p2c ${gt?'act2':''} ${gFrozen?'frozen':''}">
-      <div class="av av2" style="width:26px;height:26px;font-size:11px">${gName[0].toUpperCase()}</div>
-      <div class="scname">${gName}${myRole==='guest'?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
-      ${livesHTML('guest')}${myRole==='guest'?myStreakBadge:oppStreakBadge}
-      ${gt?'<span class="ttag tt2">turn</span>':''}
-      ${gFrozen?'<span class="frozen-icon">❄️</span>':''}
-      <div class="scnum">${gs2}</div>
+  const isFrozen=Date.now()<frozenUntil;
+  let html='';
+  for(let i=0;i<numP;i++){
+    const name=playerName(i);
+    const score=gs.scores[i]||0;
+    const lives=gs.lives?.[i]??3;
+    const isMe=i===myIdx;
+    const isTurn=gs.turn===i;
+    const isFroz=isMe&&isFrozen;
+    const livesHtml=showLives?'<div class="lives">'+[...Array(3)].map((_,j)=>`<span class="heart${j>=lives?' lost':''}">❤️</span>`).join('')+'</div>':'';
+    const streakHtml=isMe&&myStreak>=3?`<span class="streak-badge">🔥 ${myStreak}</span>`:'';
+    html+=`<div class="sc ${isTurn?'act':''} ${isFroz?'frozen':''}" style="${isTurn?'border-color:'+['rgba(108,99,255,.45)','rgba(255,95,160,.45)','rgba(63,255,168,.45)','rgba(255,209,102,.45)'][i]:''}">
+      <div class="av" style="width:26px;height:26px;font-size:11px;background:${AV_BG[i]};color:${AV_COLOR[i]}">${name[0].toUpperCase()}</div>
+      <div class="scname">${name}${isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
+      ${livesHtml}${streakHtml}
+      ${isTurn?`<span class="ttag ${TURN_CLS[i]}">turn</span>`:''}
+      ${isFroz?'<span class="frozen-icon">❄️</span>':''}
+      <div class="scnum" style="color:${SC_NUM_COLOR[i]}">${score}</div>
     </div>`;
+  }
+  $('scoreBar').innerHTML=html;
 }
 
 function renderStatus(){
   const el=$('statusBar');
   const isFrozen=Date.now()<frozenUntil;
   if(isFrozen){ el.innerHTML=`<span class="steal-msg">❄️ You are frozen! Wait...</span>`; return; }
-  if(gs.turn===myRole) el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
-  else el.innerHTML=`${oppName||'Opponent'}'s turn…`;
+  if(gs.turn===myIdx) el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
+  else el.innerHTML=`${playerName(gs.turn)}'s turn…`;
 }
 
 function renderPowerups(){
@@ -821,9 +855,8 @@ function startBlitzTimer(){
 }
 
 function passTurn(){
-  const next=myRole==='host'?'guest':'host';
-  gs.turn=next;
-  send({type:'state',state:gs,oppStreak:myStreak});
+  gs.turn=(gs.turn+1)%gs.numPlayers;
+  send({type:'state',state:gs});
   updateRender();
 }
 
@@ -834,8 +867,10 @@ function usePowerup(type){
   if(powerups[type]<=0) return;
   powerups[type]--;
   if(type==='freeze'){
-    send({type:'powerup',action:'freeze',duration:8000});
-    toast('❄️ Opponent frozen for 8s!','info');
+    // freeze next player in turn order
+    const target=(myIdx+1)%gs.numPlayers;
+    send({type:'powerup',action:'freeze',duration:8000,target});
+    toast('❄️ '+playerName(target)+' frozen for 8s!','info');
   } else if(type==='hint'){
     revealHint();
     toast('💡 Hint revealed!','info');
@@ -851,7 +886,7 @@ function revealHint(){
   if(rightEl){
     rightEl.classList.add('hint-reveal');
     const cw=rightEl.querySelector('.cw');
-    if(cw){ cw.style.filter='none'; }
+    if(cw) cw.style.filter='none';
     setTimeout(()=>{ rightEl.classList.remove('hint-reveal'); if(gs.diff==='hard'||gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
   }
 }
@@ -861,35 +896,29 @@ function revealHint(){
 // ═══════════════════════════════════════════════════════
 function reshuffleCards(){
   const unmatchedR=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
-  const shuffled=shuffle(unmatchedR);
-  let i=0;
+  const shuffled=shuffle(unmatchedR); let i=0;
   gs.rightCards=gs.rightCards.map(c=>gs.matched.includes(c.id)?c:shuffled[i++]);
   const rc=$('rightCol');
   rc.querySelectorAll('.card:not(.matched)').forEach(el=>el.classList.add('shuffling'));
-  setTimeout(()=>{
-    rc.innerHTML='';
-    gs.rightCards.forEach(c=>rc.appendChild(makeCard(c,'r')));
-    toast('💀 Expert: cards reshuffled!','info');
-  },500);
+  setTimeout(()=>{ rc.innerHTML=''; gs.rightCards.forEach(c=>rc.appendChild(makeCard(c,'r'))); toast('💀 Expert: cards reshuffled!','info'); },500);
 }
 
 // ═══════════════════════════════════════════════════════
 //  SELECTION & MATCHING
 // ═══════════════════════════════════════════════════════
 function selectL(id){
-  if(gs.turn!==myRole){toast("Not your turn!",'err');return}
+  if(gs.turn!==myIdx){toast("Not your turn!",'err');return}
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return}
   if(selL===id){clearSel();return}
   if(selL) document.getElementById('lc_'+selL)?.classList.remove('sel');
   selL=id; document.getElementById('lc_'+id)?.classList.add('sel'); tryMatch();
 }
 function selectR(id){
-  if(gs.turn!==myRole){toast("Not your turn!",'err');return}
+  if(gs.turn!==myIdx){toast("Not your turn!",'err');return}
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return}
   if(selR===id){clearSel();return}
   if(selR) document.getElementById('rc_'+selR)?.classList.remove('selr');
   selR=id; document.getElementById('rc_'+id)?.classList.add('selr');
-  // Hard mode: reveal on select
   if(gs.diff==='hard'||gs.diff==='expert'){ const cw=document.querySelector('#rc_'+id+' .cw'); if(cw) cw.style.filter='none'; }
   tryMatch();
 }
@@ -902,43 +931,35 @@ function clearSel(){
 function tryMatch(){
   if(!selL||!selR) return;
   const l=selL, r=selR; clearSel();
-  const next=myRole==='host'?'guest':'host';
+  const next=(gs.turn+1)%gs.numPlayers;
 
   if(l===r){
-    // CORRECT
     myStreak++;
     let bonus=0;
-    if(myStreak>0&&myStreak%3===0){ bonus=2; toast(`🔥 ${myStreak} streak! +${1+bonus} points!`,'streak'); }
+    if(myStreak%3===0){ bonus=2; toast(`🔥 ${myStreak} streak! +${1+bonus}!`,'streak'); }
     else toast('Correct! +1','ok');
-
     gs.matched.push(l);
-    gs.scores[myRole]+=(1+bonus);
+    gs.scores[myIdx]=(gs.scores[myIdx]||0)+(1+bonus);
     gs.turn=next;
-
-    // survival: no life lost
     const allDone=gs.matched.length===gs.leftCards.length;
     const blitzDone=gs.mode==='blitz'&&gs.blitzEnd&&Date.now()>=gs.blitzEnd;
     if(allDone||blitzDone){ gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers(); }
-
-    send({type:'state',state:gs,oppStreak:myStreak});
+    send({type:'state',state:gs});
     updateRender();
     if(gs.status==='finished') setTimeout(showResult,350);
-
   } else {
-    // WRONG
     myStreak=0;
     const le=document.getElementById('lc_'+l), re=document.getElementById('rc_'+r);
     le?.classList.add('wrong'); re?.classList.add('wrong');
-
     if(gs.mode==='survival'){
-      gs.lives[myRole]=Math.max(0,(gs.lives[myRole]??3)-1);
-      toast(`Wrong! ❤️ Lives: ${gs.lives[myRole]}`,'err');
-      if(gs.lives[myRole]<=0){ gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers(); }
+      gs.lives[myIdx]=Math.max(0,(gs.lives[myIdx]??3)-1);
+      toast(`Wrong! ❤️ ${gs.lives[myIdx]} lives left`,'err');
+      if(gs.lives[myIdx]<=0){ gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers(); }
     } else {
       toast('Wrong — turn passes','err');
     }
     gs.turn=next;
-    setTimeout(()=>{ le?.classList.remove('wrong'); re?.classList.remove('wrong'); send({type:'state',state:gs,oppStreak:myStreak}); updateRender(); if(gs.status==='finished')setTimeout(showResult,350); },400);
+    setTimeout(()=>{ le?.classList.remove('wrong'); re?.classList.remove('wrong'); send({type:'state',state:gs}); updateRender(); if(gs.status==='finished')setTimeout(showResult,350); },400);
   }
 }
 
@@ -1005,7 +1026,7 @@ function launchConfetti(){
 function requestRematch(){
   if(myRole==='host'){
     const pairs=pickPairs();
-    gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc,ru:p.ru}))),matched:[],scores:{host:0,guest:0},lives:{host:3,guest:3},turn:'host',status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null};
+    gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores:{host:0,guest:0},lives:{host:3,guest:3},turn:'host',status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null};
     send({type:'rematch',state:gs}); myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
     startRender(); go('sGame');
   } else toast('Waiting for host to restart…');
