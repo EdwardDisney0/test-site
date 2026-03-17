@@ -283,7 +283,7 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
         </div>
         <div class="opt-card" data-diff="hard" onclick="pickDiff(this)">
           <div class="opt-title">🔴 Hard</div>
-          <div class="opt-sub">Meanings hidden until picked</div>
+          <div class="opt-sub">Word shown, meaning without the word</div>
         </div>
         <div class="opt-card" data-diff="expert" onclick="pickDiff(this)">
           <div class="opt-title">💀 Expert</div>
@@ -716,10 +716,19 @@ function makeCard(c,side){
     d.innerHTML=`<div class="cw">${c.word}</div><span class="badge bc">countable</span><span class="chk">✓</span>`;
     if(canAct) d.onclick=()=>selectL(c.id);
   } else {
-    const hard=gs.diff==='hard'||gs.diff==='expert';
+    const isExpert=gs.diff==='expert';
+    const isHard=gs.diff==='hard';
     const reveal=tempRevealed.has(c.id);
-    const blurStyle=hard&&!reveal?'filter:blur(7px);user-select:none':'';
-    d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${blurStyle?`style="${blurStyle}"`:''}>${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
+    // Hard: show ONLY the description part, hide the word
+    // e.g. "art — creative expression in general" → "creative expression in general"
+    // Expert: full meaning but blurred until selected
+    let displayText=c.meaning;
+    if(isHard){
+      const parts=c.meaning.split(' — ');
+      displayText=parts.length>1 ? parts.slice(1).join(' — ').trim() : c.meaning;
+    }
+    const blurStyle=isExpert&&!reveal?'filter:blur(7px);user-select:none':'';
+    d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${blurStyle?`style="${blurStyle}"`:''}>${displayText}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
     if(canAct) d.onclick=()=>selectR(c.id);
   }
   return d;
@@ -780,9 +789,8 @@ function renderStatus(){
   const el=$('statusBar'); if(!el) return;
   if(Date.now()<frozenUntil){el.innerHTML=`<span class="steal-msg">❄️ You are frozen! Wait...</span>`;return;}
   if(myTurn()){
-    const isHard=gs.diff==='hard'||gs.diff==='expert';
-    if(isHard&&selL) el.innerHTML=`<span class="turn-msg">Good!</span> Now pick a hidden meaning to reveal it`;
-    else if(isHard) el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word first, then a hidden meaning`;
+    if(gs.diff==='expert'&&selL) el.innerHTML=`<span class="turn-msg">Good!</span> Now pick a hidden meaning to reveal it`;
+    else if(gs.diff==='expert') el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word first, then a hidden meaning`;
     else el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
   } else {
     el.innerHTML=`${gs.players[gs.turn]||'Player '+(gs.turn+1)}'s turn…`;
@@ -866,51 +874,54 @@ function selectL(id){
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
   if(selL===id){clearSel();return;}
   if(selL) $('lc_'+selL)?.classList.remove('sel');
-  // in hard/expert, hide previously peeked right card when we change left selection
-  if(selR&&(gs.diff==='hard'||gs.diff==='expert')){
+  // in expert, hide previously peeked right card when we change left selection
+  if(selR&&gs.diff==='expert'){
     const cw=document.querySelector('#rc_'+selR+' .cw');
     if(cw) cw.style.filter='blur(7px)';
     $('rc_'+selR)?.classList.remove('selr');
     selR=null;
   }
   selL=id; $('lc_'+id)?.classList.add('sel');
-  // in hard/expert show a "now pick the meaning" hint
-  if(gs.diff==='hard'||gs.diff==='expert') renderStatus();
+  // in expert show a "now pick the meaning" hint
+  if(gs.diff==='expert') renderStatus();
   tryMatch();
 }
 
 function selectR(id){
   if(!myTurn()){toast("Not your turn!",'err');return;}
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
-  // in hard/expert: must pick left first
-  if((gs.diff==='hard'||gs.diff==='expert')&&!selL){
+  // in expert: must pick left first
+  if(gs.diff==='expert'&&!selL){
     toast('Pick a word on the left first!','err'); return;
   }
   if(selR===id){
-    // deselect — re-blur it
+    // deselect — re-blur
     $('rc_'+id)?.classList.remove('selr');
-    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+id+' .cw');if(cw)cw.style.filter='blur(7px)';}
+    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+id+' .cw');if(cw)cw.style.filter='blur(7px)';}
     selR=null; return;
   }
   // hide previous right selection
   if(selR){
     $('rc_'+selR)?.classList.remove('selr');
-    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
+    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
   }
   selR=id; $('rc_'+id)?.classList.add('selr');
-  // reveal the hidden meaning when user picks it
-  if(gs.diff==='hard'||gs.diff==='expert'){
+
+  if(gs.diff==='expert'){
+    // reveal the card so player can read it, then match after 800ms
     const cw=document.querySelector('#rc_'+id+' .cw');
     if(cw) cw.style.filter='none';
+    if(selL) setTimeout(()=>tryMatch(), 800);
+  } else {
+    tryMatch();
   }
-  tryMatch();
 }
 
 function clearSel(){
   if(selL) $('lc_'+selL)?.classList.remove('sel');
   if(selR){
     $('rc_'+selR)?.classList.remove('selr');
-    if(gs.diff==='hard'||gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
+    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
   }
   selL=null; selR=null;
 }
@@ -952,8 +963,8 @@ function tryMatch(){
     gs.turn=next;
     setTimeout(()=>{
       le?.classList.remove('wrong'); re?.classList.remove('wrong');
-      // in hard/expert: keep card visible for 2.5s so player can memorize, then re-blur
-      if(gs.diff==='hard'||gs.diff==='expert'){
+      // in expert: keep card visible for 2.5s so player can memorize, then re-blur
+      if(gs.diff==='expert'){
         tempRevealed.add(r);
         setTimeout(()=>{
           tempRevealed.delete(r);
@@ -994,7 +1005,7 @@ function revealHint(){
   el.classList.add('hint-reveal');
   const cw=el.querySelector('.cw'); if(cw) cw.style.filter='none';
   toast('💡 Hint revealed!','info');
-  setTimeout(()=>{el.classList.remove('hint-reveal');if(gs.diff==='hard'||gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
+  setTimeout(()=>{el.classList.remove('hint-reveal');if(gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
 }
 
 // ═══════════════ RESULT ═══════════════
