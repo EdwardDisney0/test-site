@@ -587,7 +587,8 @@ function onData(msg){
       gs=msg.state; maxPlayers=gs.maxPlayers;
       players=gs.players;
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
-      myStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
+      gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
+      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
       startRender(); go('sGame'); break;
     }
 
@@ -650,7 +651,8 @@ function onData(msg){
     case 'rematch':{
       gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
-      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
+      gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
+      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
       startRender(); go('sGame'); break;
     }
   }
@@ -667,15 +669,16 @@ function startGame(){
     leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
     rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),
     matched:[], scores, lives,
-    turn:0,          // index of whose turn it is
+    turn:0,
     numPlayers:np,
     players:{...players},
     status:'playing',
     startedAt:Date.now(), finishedAt:null,
     mode:chosenMode, diff:chosenDiff,
-    blitzEnd:chosenMode==='blitz'?Date.now()+60000:null,
     maxPlayers:chosenMaxPlayers,
   };
+  // myTimeLeft is local per-player — not shared in gs
+  gs.myTimeLeft = chosenMode==='blitz' ? 60000 : null;
   send({type:'start',state:gs});
   myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
   startRender(); go('sGame');
@@ -829,22 +832,29 @@ function startTurnTimer(){
 }
 
 function startBlitzTimer(){
-  const total=60000; const circ=125.6;
+  const circ=125.6;
   const circle=$('blitzCircle'), num=$('blitzNum');
   clearInterval(blitzI);
   blitzI=setInterval(()=>{
-    const rem=Math.max(0,gs.blitzEnd-Date.now());
+    if(!gs||gs.status!=='playing') return;
+
+    // Only drain time when it's MY turn
+    if(myTurn()){
+      gs.myTimeLeft=Math.max(0,(gs.myTimeLeft??60000)-200);
+      // sync to state so opponent can see our time (optional visual)
+    }
+
+    const rem=gs.myTimeLeft??60000;
+    const total=60000;
     const s=Math.ceil(rem/1000);
     circle.style.strokeDashoffset=circ*(1-rem/total);
     num.textContent=s;
     circle.style.stroke=s<=10?'var(--rd)':s<=20?'var(--or)':'var(--ac)';
+
     if(rem<=0){
       clearInterval(blitzI);
-      // Only host sends the finish to avoid race condition
-      if(myRole==='host'&&gs.status==='playing'){
-        gs.status='finished'; gs.finishedAt=Date.now();
-        send({type:'state',state:gs});
-      }
+      gs.status='finished'; gs.finishedAt=Date.now();
+      send({type:'state',state:gs});
       showResult();
     }
   },200);
@@ -1056,7 +1066,8 @@ function requestRematch(){
   const np=numP(); const pairs=pickPairs(chosenPairs||6);
   const scores={}, lives={};
   for(let i=0;i<np;i++){scores[i]=0;lives[i]=3;}
-  gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null,maxPlayers};
+  gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,maxPlayers};
+  gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
   send({type:'rematch',state:gs});
   myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
   startRender(); go('sGame');
