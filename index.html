@@ -464,6 +464,7 @@ let maxPlayers=2;
 let gs=null;
 let selL=null, selR=null;
 let myStreak=0, powerups={freeze:2,hint:2,shuffle:2}, frozenUntil=0;
+let tempRevealed=new Set(); // cards temporarily shown after wrong guess in hard/expert
 let chosenMode='classic', chosenDiff='easy', chosenPairs=6, chosenMaxPlayers=2;
 let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
 
@@ -676,7 +677,7 @@ function startGame(){
     maxPlayers:chosenMaxPlayers,
   };
   send({type:'start',state:gs});
-  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
   startRender(); go('sGame');
 }
 
@@ -716,7 +717,9 @@ function makeCard(c,side){
     if(canAct) d.onclick=()=>selectL(c.id);
   } else {
     const hard=gs.diff==='hard'||gs.diff==='expert';
-    d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${hard?'style="filter:blur(7px);user-select:none"':''}>${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
+    const reveal=tempRevealed.has(c.id);
+    const blurStyle=hard&&!reveal?'filter:blur(7px);user-select:none':'';
+    d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${blurStyle?`style="${blurStyle}"`:''}>${c.meaning}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
     if(canAct) d.onclick=()=>selectR(c.id);
   }
   return d;
@@ -949,10 +952,14 @@ function tryMatch(){
     gs.turn=next;
     setTimeout(()=>{
       le?.classList.remove('wrong'); re?.classList.remove('wrong');
-      // re-blur the wrong right card in hard/expert
+      // in hard/expert: keep card visible for 2.5s so player can memorize, then re-blur
       if(gs.diff==='hard'||gs.diff==='expert'){
-        const cw=document.querySelector('#rc_'+r+' .cw');
-        if(cw) cw.style.filter='blur(7px)';
+        tempRevealed.add(r);
+        setTimeout(()=>{
+          tempRevealed.delete(r);
+          const cw=document.querySelector('#rc_'+r+' .cw');
+          if(cw) cw.style.filter='blur(7px)';
+        }, 2500);
       }
       send({type:'state',state:gs}); updateRender();
       if(gs.status==='finished') setTimeout(showResult,350);
