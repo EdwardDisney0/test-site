@@ -153,6 +153,44 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 .blitz-ring .ring-fill{fill:none;stroke:var(--ac);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .5s linear,stroke .3s}
 .blitz-ring .ring-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:700}
 
+
+/* ── DIFFICULTY BANNER ── */
+.diff-banner{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-radius:var(--r);margin-bottom:.8rem;font-size:13px;font-weight:500;
+  border:1px solid;position:relative;overflow:hidden;
+}
+.diff-banner::before{content:'';position:absolute;inset:0;opacity:.07;pointer-events:none;}
+.diff-easy  .diff-banner{background:rgba(63,255,168,.06);border-color:rgba(63,255,168,.35);color:var(--gr);}
+.diff-medium.diff-banner,.diff-medium > .diff-banner{background:rgba(255,209,102,.06);border-color:rgba(255,209,102,.35);color:var(--yl);}
+.diff-hard  .diff-banner{background:rgba(255,71,87,.06);border-color:rgba(255,71,87,.35);color:var(--rd);}
+.diff-expert.diff-banner,.diff-expert > .diff-banner{background:rgba(108,99,255,.08);border-color:rgba(108,99,255,.45);color:var(--acl);}
+/* stand-alone banner without parent class */
+.dbanner-easy  {background:rgba(63,255,168,.06) !important;border-color:rgba(63,255,168,.35) !important;color:var(--gr) !important;}
+.dbanner-medium{background:rgba(255,209,102,.07) !important;border-color:rgba(255,209,102,.4) !important;color:var(--yl) !important;}
+.dbanner-hard  {background:rgba(255,71,87,.07) !important;border-color:rgba(255,71,87,.4) !important;color:var(--rd) !important;}
+.dbanner-expert{background:rgba(108,99,255,.1) !important;border-color:rgba(108,99,255,.5) !important;color:var(--acl) !important;}
+.dbanner-icon{font-size:22px;flex-shrink:0;}
+.dbanner-body{display:flex;flex-direction:column;gap:2px;}
+.dbanner-title{font-family:'Syne',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:-.01em;}
+.dbanner-desc{font-size:11px;opacity:.75;}
+
+/* ── DIFF TOP STRIP ── */
+.diff-strip{height:4px;width:100%;border-radius:0;margin-bottom:0;flex-shrink:0;}
+.diff-strip.easy  {background:linear-gradient(90deg,var(--gr),rgba(63,255,168,.2));}
+.diff-strip.medium{background:linear-gradient(90deg,var(--yl),rgba(255,209,102,.2));}
+.diff-strip.hard  {background:linear-gradient(90deg,var(--rd),rgba(255,71,87,.2));}
+.diff-strip.expert{background:linear-gradient(90deg,var(--ac),var(--pk),rgba(108,99,255,.2));animation:expertGlow 2s ease infinite;}
+@keyframes expertGlow{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* ── L1 HARD: timer bar ── */
+.q-timer-bar{height:3px;background:var(--b1);border-radius:2px;margin-bottom:1rem;overflow:hidden;}
+.q-timer-fill{height:100%;border-radius:2px;transition:width .1s linear;}
+
+/* ── L1 EXPERT: blurred options ── */
+.opt-blur{filter:blur(5px);transition:filter .2s;}
+.opt-blur:hover,.opt-blur:focus{filter:none;}
+
 /* ── WORD SORTER (L4) — tap-friendly ── */
 .sorter-wrap{max-width:680px;margin:0 auto;padding:1rem 0;width:100%}
 .word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.4rem;min-height:40px}
@@ -339,7 +377,8 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 
   <!-- GAME -->
   <div class="screen" id="sGame">
-    <div class="gwrap">
+    <div id="diffStrip" class="diff-strip" style="display:none"></div>
+      <div class="gwrap">
       <div class="gtop">
         <div class="stats" id="statsBar"></div>
         <button class="btn bg" style="font-size:11px;padding:5px 11px" onclick="leaveRoom()">Leave</button>
@@ -502,6 +541,7 @@ let chosenMode='classic', chosenDiff='easy', chosenPairs=6, chosenMaxPlayers=2;
 let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
 let selL=null, selR=null, tempRevealed=new Set();
 let qState=null;
+let lastGameType='classic'; // tracks last played game for rematch
 
 // L4 tap state
 let l4SelectedWord=null;
@@ -642,9 +682,10 @@ function onData(msg){
       toast('Room is full!','err'); leaveRoom(); break;
     case 'start':
       gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
+      lastGameType='classic';
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       gs.myTimeLeft=gs.mode==='blitz'?60000:null;
-      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
+      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set(); diffBannerShown=false;
       startRender(); go('sGame'); break;
     case 'state':
       gs=msg.state;
@@ -682,7 +723,7 @@ function onData(msg){
       gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       gs.myTimeLeft=gs.mode==='blitz'?60000:null;
-      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
+      myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set(); diffBannerShown=false;
       startRender(); go('sGame'); break;
 
     // quiz messages
@@ -690,15 +731,37 @@ function onData(msg){
       qState=msg.qState;
       // guests need to init their own local copy of scores
       if(!qState.scores[myIdx]) qState.scores[myIdx]=0;
-      l4SelectedWord=null; l4Placed={};
-      renderQuiz(); go('sGame'); break;
+      l4SelectedWord=null; l4Placed={}; diffBannerShown=false;
+      if(!qState.finished) qState.finished={};
+      renderQuiz(); go('sGame');
+      startQuizGlobalTimer(); break;
     case 'quiz_answer':
       if(msg.idx!==myIdx){
         qState.scores[msg.idx]=msg.score;
         updateOpponentQuizScore(msg.idx,msg.score);
       }
       break;
+    case 'quiz_done':
+      // Someone finished — update their score and finished flag
+      if(!qState) break;
+      if(!qState.finished) qState.finished={};
+      qState.finished[msg.idx]=true;
+      qState.scores[msg.idx]=msg.score;
+      updateOpponentQuizScore(msg.idx,msg.score);
+      // If I'm also done (waiting screen), refresh the waiting view
+      if(qState.finished[myIdx]) showWaitingForOthers();
+      // If host and all done → trigger finish for everyone
+      if(myRole==='host'){
+        const allDone=Object.keys(qState.players||{}).every(k=>qState.finished[k]);
+        if(allDone){
+          clearInterval(quizGlobalI);
+          send({type:'quiz_finish',scores:qState.scores});
+          showQuizResult(qState.scores);
+        }
+      }
+      break;
     case 'quiz_finish':
+      clearInterval(quizGlobalI);
       showQuizResult(msg.scores); break;
   }
 }
@@ -708,6 +771,7 @@ function onData(msg){
 // ═══════════════════════════════════════
 function startGame(){
   const level=chosenMode;
+  lastGameType=level;
   if(level==='l1'||level==='l2'||level==='l4'){
     startQuizGame(level); return;
   }
@@ -725,21 +789,22 @@ function startGame(){
   };
   gs.myTimeLeft=chosenMode==='blitz'?60000:null;
   send({type:'start',state:gs});
-  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set(); diffBannerShown=false;
   startRender(); go('sGame');
 }
 
 function startQuizGame(level){
+  lastGameType=level;
   let data;
   if(level==='l1') data=shuffle(T1).slice(0,8);
   else if(level==='l2') data=shuffle(T2).slice(0,6);
   else data=T4_SETS[Math.floor(Math.random()*T4_SETS.length)];
-  const np=numP(), scores={};
-  for(let i=0;i<np;i++) scores[i]=0;
+  const np=numP(), scores={}, finished={};
+  for(let i=0;i<np;i++){scores[i]=0; finished[i]=false;}
   qState={
     level, qIdx:0,
     total: level==='l4' ? 1 : data.length,
-    data, scores,
+    data, scores, finished,
     numPlayers:np, players:{...players},
     status:'playing', startedAt:Date.now(),
     diff:chosenDiff
@@ -747,6 +812,7 @@ function startQuizGame(level){
   l4SelectedWord=null; l4Placed={};
   send({type:'quiz_start',qState});
   renderQuiz(); go('sGame');
+  startQuizGlobalTimer();
 }
 
 // ═══════════════════════════════════════
@@ -762,6 +828,7 @@ function renderQuiz(){
   $('leftCol').style.gridColumn='';
   renderQuizScoreBar();
   updateQuizStatsBar();
+  showDiffBanner(qState.diff||chosenDiff||'easy');
   if(qState.level==='l1') renderL1();
   else if(qState.level==='l2') renderL2();
   else if(qState.level==='l4') renderL4();
@@ -784,16 +851,30 @@ function renderQuizScoreBar(){
 function updateQuizStatsBar(){
   const left = qState.level==='l4' ? '' : (qState.total - qState.qIdx) + ' left';
   const gameName={'l1':'📝 Article Hunt','l2':'🔍 Error Spotter','l4':'🧩 Word Sorter'}[qState.level]||'Game';
-  const diffLabel={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🔴 Hard',expert:'💀 Expert'}[qState.diff||chosenDiff]||'';
+  const diff=qState.diff||chosenDiff||'easy';
+  const DIFF_META={
+    easy:  {label:'🟢 Easy',   color:'var(--gr)', bg:'rgba(63,255,168,.12)',  border:'rgba(63,255,168,.35)'},
+    medium:{label:'🟡 Medium', color:'var(--yl)', bg:'rgba(255,209,102,.12)', border:'rgba(255,209,102,.35)'},
+    hard:  {label:'🔴 Hard',   color:'var(--rd)', bg:'rgba(255,71,87,.12)',   border:'rgba(255,71,87,.35)'},
+    expert:{label:'💀 Expert', color:'var(--acl)',bg:'rgba(108,99,255,.15)',  border:'rgba(108,99,255,.5)'},
+  };
+  const dm=DIFF_META[diff]||DIFF_META.easy;
   $('statsBar').innerHTML=`
     ${left?`<div class="pill"><span class="pv" id="pLeft">${left}</span></div>`:''}
     <div class="pill"><span class="pv" id="pTime">0s</span></div>
     <div class="pill"><span class="pv">${gameName}</span></div>
-    ${diffLabel?`<div class="pill"><span class="pv">${diffLabel}</span></div>`:''}`;
+    <div class="pill" style="background:${dm.bg};border-color:${dm.border}"><span class="pv" style="color:${dm.color}">${dm.label}</span></div>`;
+  const strip=$('diffStrip');
+  if(strip){strip.className='diff-strip '+diff;strip.style.display='block';}
   // keep timer ticking
+  // pTime is updated by quizGlobalTimer (countdown). Start elapsed as fallback only if no global timer yet.
   clearInterval(timerI);
   timerI=setInterval(()=>{
-    const el=$('pTime'); if(el&&qState) el.textContent=Math.floor((Date.now()-qState.startedAt)/1000)+'s';
+    const el=$('pTime'); if(el&&qState&&qState.status==='playing'){
+      const elapsed=Math.floor((Date.now()-qState.startedAt)/1000);
+      const rem=Math.max(0,120-elapsed);
+      el.textContent=rem+'s';
+    }
   },500);
 }
 
@@ -819,45 +900,67 @@ function refreshMyScore(){
 // ─── Level 1: a / an / some ───
 function renderL1(){
   if(qState.qIdx>=qState.data.length){finishQuiz();return;}
+  clearInterval(qTimerI);
   const q=qState.data[qState.qIdx];
+  const diff=qState.diff||chosenDiff||'easy';
+  const cfg=DIFF_CFG[diff]||DIFF_CFG.easy;
   const gameArea=$('leftCol');
   $('rightCol').innerHTML=''; $('midCol').innerHTML='';
   gameArea.style.gridColumn='1 / -1';
+  const isExpert=diff==='expert';
+  const optBlurClass=isExpert?'opt-blur':'';
+  const timerHTML=cfg.l1Timer>0?`<div class="q-timer-bar"><div class="q-timer-fill" id="qTimerFill" style="width:100%;background:${cfg.color}"></div></div>`:'';
   gameArea.innerHTML=`
     <div style="max-width:560px;margin:0 auto;padding:1rem 0">
-      <div style="font-size:12px;color:var(--m);margin-bottom:1rem">Choose the correct article or determiner:</div>
+      ${timerHTML}
+      <div style="font-size:12px;color:var(--m);margin-bottom:1rem">Choose the correct article or determiner${cfg.l1Timer>0?' <span style="color:'+cfg.color+'">⏱ '+cfg.l1Timer+'s</span>':''}:</div>
       <div style="background:var(--s1);border:1px solid var(--b2);border-radius:var(--rl);padding:1.5rem 1.75rem;margin-bottom:1.5rem">
         <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:-.01em;line-height:1.5">
           ${q.s.replace('___','<span style="background:rgba(108,99,255,.15);border-bottom:2px solid var(--acl);padding:0 6px;border-radius:4px;color:var(--acl)">___</span>')}
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        ${q.opts.map(o=>`<button class="btn bs" style="flex:1;font-size:1rem;padding:14px;font-family:'Syne',sans-serif;font-weight:700" onclick="answerL1('${o}')">${o}</button>`).join('')}
+        ${q.opts.map(o=>`<button class="btn bs ${optBlurClass}" style="flex:1;font-size:1rem;padding:14px;font-family:'Syne',sans-serif;font-weight:700" onclick="answerL1('${o}')">${o}</button>`).join('')}
       </div>
       <div id="qfeedback" style="margin-top:1rem;min-height:32px"></div>
     </div>`;
   renderQuizStatus();
+  // Start per-question timer if hard/expert
+  if(cfg.l1Timer>0){
+    let rem=cfg.l1Timer*10; const total=rem;
+    qTimerI=setInterval(()=>{
+      rem--;
+      const fill=$('qTimerFill'); if(fill) fill.style.width=(rem/total*100)+'%';
+      if(rem<=0){clearInterval(qTimerI);answerL1('__timeout__');}
+    },100);
+  }
 }
 
 function answerL1(ans){
+  clearInterval(qTimerI);
   const q=qState.data[qState.qIdx];
-  const correct=ans===q.a;
+  const isTimeout=ans==='__timeout__';
+  const correct=!isTimeout&&(ans===q.a);
+  const diff=qState.diff||chosenDiff||'easy';
+  const cfg=DIFF_CFG[diff]||DIFF_CFG.easy;
   document.querySelectorAll('#leftCol .btn').forEach(b=>{
-    b.disabled=true;
+    b.disabled=true; b.classList.remove('opt-blur');
     if(b.textContent.trim()===q.a) b.style.background='rgba(63,255,168,.2)';
     else if(b.textContent.trim()===ans&&!correct) b.style.background='rgba(255,71,87,.2)';
   });
   const fb=$('qfeedback');
-  if(correct){
+  if(isTimeout){
+    fb.innerHTML=`<span style="color:var(--or);font-weight:500">⏱ Time's up!</span>${cfg.showCorrectOnWrong?' <span style="color:var(--m)">Answer: <b style="color:var(--text)">'+q.a+'</b></span>':''}`;
+  } else if(correct){
     qState.scores[myIdx]=(qState.scores[myIdx]||0)+1;
     fb.innerHTML=`<span style="color:var(--gr);font-weight:500">✓ Correct!</span>`;
   } else {
-    fb.innerHTML=`<span style="color:var(--rd)">✗ Wrong.</span> <span style="color:var(--m)">Answer: <b style="color:var(--text)">${q.a}</b></span>`;
+    fb.innerHTML=`<span style="color:var(--rd)">✗ Wrong.</span>${cfg.showCorrectOnWrong?' <span style="color:var(--m)">Answer: <b style="color:var(--text)">'+q.a+'</b></span>':''}`;
   }
   send({type:'quiz_answer',idx:myIdx,score:qState.scores[myIdx]});
   refreshMyScore();
   qState.qIdx++;
-  setTimeout(()=>renderL1(), 1200);
+  setTimeout(()=>renderL1(), cfg.feedbackDelay);
 }
 
 // ─── Level 2: find the error ───
@@ -899,7 +1002,9 @@ function answerL2(saysCorrect){
   send({type:'quiz_answer',idx:myIdx,score:qState.scores[myIdx]});
   refreshMyScore();
   qState.qIdx++;
-  setTimeout(()=>renderL2(), 2000);
+  const _diffL2=qState.diff||chosenDiff||'easy';
+  const _cfgL2=DIFF_CFG[_diffL2]||DIFF_CFG.easy;
+  setTimeout(()=>renderL2(), _cfgL2.l2Delay);
 }
 
 // ─── Level 4: Word Sorter (tap-friendly, no drag required) ───
@@ -1041,9 +1146,47 @@ function checkL4(){
 }
 
 function finishQuiz(){
-  clearAllTimers();
-  send({type:'quiz_finish',scores:qState.scores});
-  showQuizResult(qState.scores);
+  clearInterval(qTimerI);
+  // Mark me as done
+  if(qState.finished) qState.finished[myIdx]=true;
+  send({type:'quiz_done',idx:myIdx,score:qState.scores[myIdx]||0});
+  // Show waiting screen while others finish
+  showWaitingForOthers();
+}
+
+function showWaitingForOthers(){
+  const np=qState.numPlayers;
+  const allDone=Object.keys(qState.players||{}).every(k=>qState.finished&&qState.finished[k]);
+  if(allDone){
+    // All finished — show results
+    send({type:'quiz_finish',scores:qState.scores});
+    showQuizResult(qState.scores);
+    return;
+  }
+  // Show waiting overlay
+  const gameArea=$('leftCol');
+  $('rightCol').innerHTML=''; $('midCol').innerHTML='';
+  gameArea.style.gridColumn='1 / -1';
+  let waitHTML='';
+  for(let i=0;i<np;i++){
+    if(!qState.players[i]) continue;
+    const done=qState.finished&&qState.finished[i];
+    waitHTML+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:6px">
+      <div style="width:28px;height:28px;border-radius:50%;background:${P_BG[i]};color:${P_COLORS[i]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">${qState.players[i][0].toUpperCase()}</div>
+      <div style="flex:1;font-size:.88rem">${qState.players[i]}${i===myIdx?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
+      <div style="font-size:13px">${done?'✅':'<span style="animation:pulse 1s infinite;display:inline-block">⏳</span>'}</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;color:${P_COLORS[i]}">${qState.scores[i]||0}</div>
+    </div>`;
+  }
+  gameArea.innerHTML=`
+    <div style="max-width:480px;margin:0 auto;padding:2rem 0;text-align:center">
+      <div style="font-size:40px;margin-bottom:.8rem">⏳</div>
+      <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;margin-bottom:.4rem">You're done!</div>
+      <div style="font-size:.88rem;color:var(--m);margin-bottom:1.5rem">Waiting for others to finish…</div>
+      ${waitHTML}
+      <div style="margin-top:1.2rem;font-size:11px;color:var(--m)" id="waitTimerTxt"></div>
+    </div>`;
+  $('statusBar').innerHTML='';
 }
 
 function showQuizResult(scores){
@@ -1069,15 +1212,116 @@ function showQuizResult(scores){
   if(iWin&&!isTie) launchConfetti();
 }
 
+
+// ── DIFFICULTY BANNER + GAMEPLAY ──────────────────────────────────
+const DIFF_CFG = {
+  easy:  {
+    icon:'🟢', label:'Easy', color:'var(--gr)',
+    desc:'Full meanings shown — match the pairs!',
+    cls:'dbanner-easy',
+    // gameplay: no changes (default)
+    feedbackDelay:1200, l2Delay:2000, showCorrectOnWrong:true,
+    l1Timer:0, // no timer
+  },
+  medium:{
+    icon:'🟡', label:'Medium', color:'var(--yl)',
+    desc:'English only — no hints!',
+    cls:'dbanner-medium',
+    feedbackDelay:1000, l2Delay:1800, showCorrectOnWrong:true,
+    l1Timer:0,
+  },
+  hard:  {
+    icon:'🔴', label:'Hard', color:'var(--rd)',
+    desc:'15 seconds per question — no second chances!',
+    cls:'dbanner-hard',
+    feedbackDelay:800, l2Delay:1500, showCorrectOnWrong:false,
+    l1Timer:15,
+  },
+  expert:{
+    icon:'💀', label:'Expert', color:'var(--acl)',
+    desc:'8 seconds! Options are hidden until hover.',
+    cls:'dbanner-expert',
+    feedbackDelay:600, l2Delay:1200, showCorrectOnWrong:false,
+    l1Timer:8,
+  },
+};
+
+let diffBannerShown=false;
+let qTimerI=null;
+let quizGlobalI=null;
+const QUIZ_GLOBAL_MS=120000; // 2 minutes
+
+function showDiffBanner(diff){
+  if(diffBannerShown) return;
+  diffBannerShown=true;
+  const cfg=DIFF_CFG[diff]||DIFF_CFG.easy;
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:rgba(8,8,16,.75);backdrop-filter:blur(8px);';
+  overlay.innerHTML=`
+    <div style="text-align:center;max-width:340px;padding:2rem;">
+      <div style="font-size:64px;margin-bottom:.8rem;animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both">${cfg.icon}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.03em;color:${cfg.color};margin-bottom:.4rem">${cfg.label}</div>
+      <div style="font-size:.92rem;color:var(--m2);margin-bottom:1.6rem;line-height:1.6">${cfg.desc}</div>
+      <div style="width:100%;height:4px;border-radius:2px;background:var(--b2);overflow:hidden;margin-bottom:1.2rem">
+        <div id="bannerCountdown" style="height:100%;background:${cfg.color};width:100%;transition:width 2.5s linear;border-radius:2px"></div>
+      </div>
+      <div style="font-size:11px;color:var(--m)">Starting in 3 seconds… (tap to skip)</div>
+    </div>`;
+  // pop-in anim
+  const style=document.createElement('style');
+  style.textContent='@keyframes popIn{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}';
+  document.head.appendChild(style);
+  document.body.appendChild(overlay);
+  // Start countdown bar
+  requestAnimationFrame(()=>{
+    const bar=document.getElementById('bannerCountdown');
+    if(bar) bar.style.width='0%';
+  });
+  const close=()=>{overlay.remove();};
+  overlay.addEventListener('click',close);
+  setTimeout(close, 3000);
+}
+
+function startQuizGlobalTimer(){
+  clearInterval(quizGlobalI);
+  const deadline=Date.now()+QUIZ_GLOBAL_MS;
+  quizGlobalI=setInterval(()=>{
+    if(!qState||qState.status!=='playing'){clearInterval(quizGlobalI);return;}
+    const rem=Math.max(0,deadline-Date.now());
+    const secs=Math.ceil(rem/1000);
+    // Update timer display if visible
+    const tEl=$('pTime'); if(tEl) tEl.textContent=secs+'s';
+    const wEl=$('waitTimerTxt'); if(wEl) wEl.textContent='Time remaining: '+secs+'s';
+    if(rem<=0){
+      clearInterval(quizGlobalI);
+      // Force finish — submit current scores if not already done
+      if(!qState.finished) qState.finished={};
+      if(!qState.finished[myIdx]){
+        qState.finished[myIdx]=true;
+        send({type:'quiz_done',idx:myIdx,score:qState.scores[myIdx]||0});
+      }
+      if(myRole==='host'){
+        // Fill in 0 for anyone who didn't finish
+        for(let i=0;i<qState.numPlayers;i++){
+          if(!qState.finished[i]) qState.scores[i]=qState.scores[i]||0;
+        }
+        send({type:'quiz_finish',scores:qState.scores});
+        showQuizResult(qState.scores);
+      }
+    }
+  },500);
+}
+
 // ═══════════════════════════════════════
 //  MATCH GAME RENDER
 // ═══════════════════════════════════════
-function clearAllTimers(){clearInterval(timerI);clearInterval(turnTimerI);clearInterval(blitzI);clearInterval(shuffleI);}
+function clearAllTimers(){clearInterval(timerI);clearInterval(turnTimerI);clearInterval(blitzI);clearInterval(shuffleI);clearInterval(quizGlobalI);clearInterval(qTimerI);}
 
 function startRender(){
   selL=null; selR=null; clearAllTimers();
   $('leftCol').style.gridColumn=''; $('rightCol').style.gridColumn='';
   $('leftCol').innerHTML=''; $('rightCol').innerHTML=''; $('midCol').innerHTML='';
+  showDiffBanner(gs.diff||'easy');
   gs.leftCards.forEach(c=>{
     $('leftCol').appendChild(makeCard(c,'l'));
     const ln=document.createElement('div');
@@ -1131,12 +1375,22 @@ function updateRender(){
 function renderStatsBar(){
   const left=(gs.leftCards||[]).length-(gs.matched||[]).length;
   const modeLabel={classic:'⚡ Classic',speed:'⏱ Speed',blitz:'🔥 Blitz',survival:'❤️ Survival'}[gs.mode]||'';
-  const diffLabel={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🔴 Hard',expert:'💀 Expert'}[gs.diff]||'';
+  const diff=gs.diff||'easy';
+  const DIFF_META={
+    easy:  {label:'🟢 Easy',   color:'var(--gr)', bg:'rgba(63,255,168,.12)',  border:'rgba(63,255,168,.35)'},
+    medium:{label:'🟡 Medium', color:'var(--yl)', bg:'rgba(255,209,102,.12)', border:'rgba(255,209,102,.35)'},
+    hard:  {label:'🔴 Hard',   color:'var(--rd)', bg:'rgba(255,71,87,.12)',   border:'rgba(255,71,87,.35)'},
+    expert:{label:'💀 Expert', color:'var(--acl)',bg:'rgba(108,99,255,.15)',  border:'rgba(108,99,255,.5)'},
+  };
+  const dm=DIFF_META[diff]||DIFF_META.easy;
   $('statsBar').innerHTML=`
     <div class="pill"><span class="pv" id="pLeft">${left}</span><span class="pl">left</span></div>
     <div class="pill"><span class="pv" id="pTime">0s</span></div>
     <div class="pill"><span class="pv">${modeLabel}</span></div>
-    <div class="pill"><span class="pv">${diffLabel}</span></div>`;
+    <div class="pill" style="background:${dm.bg};border-color:${dm.border}"><span class="pv" style="color:${dm.color}">${dm.label}</span></div>`;
+  // top strip
+  const strip=$('diffStrip');
+  if(strip){strip.className='diff-strip '+diff;strip.style.display='block';}
 }
 
 function renderScoreBar(){
@@ -1313,21 +1567,31 @@ function launchConfetti(){
 
 function requestRematch(){
   if(myRole!=='host'){toast('Waiting for host to restart…');return;}
+  // Use the last played game type (stored in lastGameType)
+  const level = lastGameType || chosenMode;
+  if(level==='l1'||level==='l2'||level==='l4'){
+    startQuizGame(level); return;
+  }
   const n=chosenPairs||6, pairs=pickPairs(n), np=numP();
   const scores={}, lives={};
   for(let i=0;i<np;i++){scores[i]=0;lives[i]=3;}
   gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:chosenMode,diff:chosenDiff,maxPlayers};
   gs.myTimeLeft=gs.mode==='blitz'?60000:null;
   send({type:'rematch',state:gs});
-  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set(); diffBannerShown=false;
   startRender(); go('sGame');
 }
 
 function leaveRoom(){
   clearAllTimers();
   const curState=gs||qState;
-  if(ablyChannel&&curState&&curState.status==='playing')
+  if(ablyChannel&&curState&&curState.status==='playing'){
+    // If in quiz and not yet finished, submit score before leaving
+    if(qState&&(!qState.finished||!qState.finished[myIdx])){
+      send({type:'quiz_done',idx:myIdx,score:qState.scores[myIdx]||0});
+    }
     send({type:'player_left',idx:myIdx,name:myName,totalBefore:curState.numPlayers||2});
+  }
   if(ablyChannel){try{ablyChannel.unsubscribe();}catch(e){}}
   if(ablyClient){try{ablyClient.close();}catch(e){}}
   ablyClient=null; ablyChannel=null;
