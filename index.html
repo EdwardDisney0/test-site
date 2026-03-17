@@ -713,6 +713,8 @@ function onData(msg){
       updatePresence(); startRender(); go('sGame'); break;
     case 'state':
       gs=msg.state;
+      // Сбрасываем локальное выделение при получении нового состояния
+      selL=null; selR=null;
       if(gs.status==='finished'){clearAllTimers();setTimeout(showResult,350);}
       else updateRender(); break;
     case 'powerup':
@@ -1391,15 +1393,48 @@ function makeCard(c,side){
 }
 
 function updateRender(){
+  // Сначала сбрасываем выделение — карточки могли остаться sel/selr
+  // от предыдущего хода (особенно у оппонента)
+  selL=null; selR=null;
+  document.querySelectorAll('.card.sel').forEach(el=>el.classList.remove('sel'));
+  document.querySelectorAll('.card.selr').forEach(el=>el.classList.remove('selr'));
+
+  // Обновляем совпавшие карточки
   gs.matched.forEach(id=>{
-    const l=$('lc_'+id),r=$('rc_'+id),c=$('conn_'+id);
+    const l=$('lc_'+id),r=$('rc_'+id),cn=$('conn_'+id);
     if(l){l.className='card matched dis';l.onclick=null;}
     if(r){r.className='card matched dis';r.onclick=null;}
-    if(c) c.classList.add('on');
+    if(cn) cn.classList.add('on');
   });
+
+  // Обновляем несовпавшие — dis или активные
   const canAct=myTurn()&&Date.now()>=frozenUntil;
-  gs.leftCards.forEach(c=>{if(!gs.matched.includes(c.id)){const el=$('lc_'+c.id);if(el){if(canAct){el.classList.remove('dis');el.onclick=()=>selectL(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
-  gs.rightCards.forEach(c=>{if(!gs.matched.includes(c.id)){const el=$('rc_'+c.id);if(el){if(canAct){el.classList.remove('dis');el.onclick=()=>selectR(c.id);}else{el.classList.add('dis');el.onclick=null;}}}});
+  gs.leftCards.forEach(c=>{
+    if(gs.matched.includes(c.id)) return;
+    const el=$('lc_'+c.id); if(!el) return;
+    // убираем лишние классы
+    el.classList.remove('sel','selr','wrong','hint-reveal');
+    if(canAct){
+      el.classList.remove('dis');
+      el.onclick=()=>selectL(c.id);
+    } else {
+      el.classList.add('dis');
+      el.onclick=null;
+    }
+  });
+  gs.rightCards.forEach(c=>{
+    if(gs.matched.includes(c.id)) return;
+    const el=$('rc_'+c.id); if(!el) return;
+    el.classList.remove('sel','selr','wrong','hint-reveal');
+    if(canAct){
+      el.classList.remove('dis');
+      el.onclick=()=>selectR(c.id);
+    } else {
+      el.classList.add('dis');
+      el.onclick=null;
+    }
+  });
+
   renderStatsBar(); renderScoreBar(); renderStatus();
   if(gs.mode==='speed'){clearInterval(turnTimerI);if(myTurn())startTurnTimer();}
 }
@@ -1549,7 +1584,7 @@ function tryMatch(){
     } else { toast('Wrong — turn passes','err'); }
     gs.turn=next;
     setTimeout(()=>{
-      le?.classList.remove('wrong'); re?.classList.remove('wrong');
+      le?.classList.remove('wrong','sel'); re?.classList.remove('wrong','selr');
       if(gs.diff==='expert'){tempRevealed.add(r);setTimeout(()=>{tempRevealed.delete(r);const cw=document.querySelector('#rc_'+r+' .cw');if(cw)cw.style.filter='blur(7px)';},2500);}
       send({type:'state',state:gs}); updateRender();
       if(gs.status==='finished') setTimeout(showResult,350);
