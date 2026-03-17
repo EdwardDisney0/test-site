@@ -706,16 +706,52 @@ function onData(msg){
       }
       break;
     case 'player_left':{
-      const leftIdx=msg.idx;
-      if(!gs&&!qState) break;
-      const leftName=msg.name||('Player '+(leftIdx+1));
-      const numPlayers=msg.numPlayers||(gs?gs.numPlayers:qState?.numPlayers)||2;
-      if(numPlayers<=2){
-        if(gs) gs.status='finished';
+      const leftIdx=msg.idx, leftName=msg.name||('Player '+(leftIdx+1));
+      const activeState=gs||qState;
+      if(!activeState) break;
+      // totalBefore = сколько игроков было ДО выхода
+      const totalBefore=msg.totalBefore||(activeState.numPlayers||2);
+      if(totalBefore<=2){
+        // 1v1 — конец игры для оставшегося
         clearAllTimers();
-        toast(leftName+' left the match','err'); setTimeout(()=>{if(gs)showResult();else if(qState)showQuizResult(qState.scores);},600);
+        toast(leftName+' покинул игру','err');
+        setTimeout(()=>{
+          if(gs){
+            gs.status='finished'; gs.finishedAt=Date.now();
+            showResult();
+          } else if(qState){
+            qState.status='finished';
+            showQuizResult(qState.scores);
+          }
+        },600);
       } else {
-        toast(leftName+' left — turns will be skipped','info');
+        // 3+ игроков — убираем его и продолжаем
+        toast(leftName+' вышел — его ходы пропускаются','info');
+        if(gs){
+          delete gs.players[leftIdx];
+          gs.numPlayers=Object.keys(gs.players).length;
+          if(gs.turn===leftIdx){
+            let next=(gs.turn+1)%totalBefore, s=0;
+            while(!gs.players[next]&&s++<totalBefore) next=(next+1)%totalBefore;
+            gs.turn=next;
+          }
+          updateRender();
+        }
+        if(qState){
+          if(!qState.finished) qState.finished={};
+          qState.finished[leftIdx]=true;
+          delete qState.players[leftIdx];
+          qState.numPlayers=Object.keys(qState.players).length;
+          if(myRole==='host'){
+            const allDone=Object.keys(qState.players).every(k=>qState.finished[k]);
+            if(allDone){
+              clearInterval(quizGlobalI);
+              send({type:'quiz_finish',scores:qState.scores});
+              showQuizResult(qState.scores);
+            }
+          }
+          if(qState.finished&&qState.finished[myIdx]) showWaitingForOthers();
+        }
       }
       break;
     }
@@ -762,7 +798,12 @@ function onData(msg){
       break;
     case 'quiz_finish':
       clearInterval(quizGlobalI);
-      showQuizResult(msg.scores); break;
+      if(qState) qState.status='finished';
+      // Only show if not already on result screen
+      if(!document.getElementById('sResult').classList.contains('active')){
+        showQuizResult(msg.scores);
+      }
+      break;
   }
 }
 
@@ -1286,28 +1327,39 @@ function startQuizGlobalTimer(){
   clearInterval(quizGlobalI);
   const deadline=Date.now()+QUIZ_GLOBAL_MS;
   quizGlobalI=setInterval(()=>{
-    if(!qState||qState.status!=='playing'){clearInterval(quizGlobalI);return;}
+    if(!qState){clearInterval(quizGlobalI);return;}
     const rem=Math.max(0,deadline-Date.now());
     const secs=Math.ceil(rem/1000);
-    // Update timer display if visible
+    // Update timer display
     const tEl=$('pTime'); if(tEl) tEl.textContent=secs+'s';
-    const wEl=$('waitTimerTxt'); if(wEl) wEl.textContent='Time remaining: '+secs+'s';
+    const wEl=$('waitTimerTxt'); if(wEl) wEl.textContent='Осталось: '+secs+'с';
     if(rem<=0){
       clearInterval(quizGlobalI);
-      // Force finish — submit current scores if not already done
+      if(!qState) return;
+      // Mark me as finished if not already
       if(!qState.finished) qState.finished={};
       if(!qState.finished[myIdx]){
         qState.finished[myIdx]=true;
+        // Submit my score
         send({type:'quiz_done',idx:myIdx,score:qState.scores[myIdx]||0});
       }
-      if(myRole==='host'){
-        // Fill in 0 for anyone who didn't finish
-        for(let i=0;i<qState.numPlayers;i++){
-          if(!qState.finished[i]) qState.scores[i]=qState.scores[i]||0;
+      // EVERY player shows results themselves after timeout — no waiting for host
+      // Small random delay so host fires quiz_finish first (avoid double)
+      const delay = myRole==='host' ? 200 : 800;
+      setTimeout(()=>{
+        if(!qState) return; // already handled by quiz_finish message
+        // Host broadcasts finish to sync all
+        if(myRole==='host'){
+          // fill missing scores
+          for(let i=0;i<qState.numPlayers;i++){
+            if(qState.scores[i]===undefined) qState.scores[i]=0;
+          }
+          send({type:'quiz_finish',scores:qState.scores});
         }
-        send({type:'quiz_finish',scores:qState.scores});
+        // Everyone shows results (guests show with their local data if no quiz_finish arrives)
+        qState.status='finished';
         showQuizResult(qState.scores);
-      }
+      }, delay);
     }
   },500);
 }
