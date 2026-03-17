@@ -207,6 +207,14 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
   .conn{height:60px}h1{font-size:1.8rem}.panel{padding:1.2rem}
   .setup-grid{grid-template-columns:1fr}.sbar{flex-direction:column;gap:6px}
 }
+
+/* drag & drop */
+.drag-word{display:inline-flex;align-items:center;padding:6px 14px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);font-size:.85rem;font-weight:500;cursor:grab;transition:all .15s;user-select:none}
+.drag-word:hover{border-color:var(--acl);background:rgba(108,99,255,.08)}
+.drag-placed{display:inline-flex;align-items:center;padding:5px 12px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);font-size:.82rem;font-weight:500;cursor:pointer;transition:all .2s}
+.drag-placed:hover{opacity:.7}
+.drop-zone{background:var(--s1);border:1px dashed var(--b2);border-radius:var(--rl);padding:14px 16px;min-height:80px;transition:border-color .15s}
+.drop-zone:hover{border-color:var(--acl)}
 </style>
 </head>
 <body>
@@ -236,22 +244,43 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
       <input type="text" id="cName" placeholder="Enter your name" maxlength="16">
 
       <div class="lbl">Game Mode</div>
+      <div class="lbl">Game type</div>
       <div class="setup-grid" id="modeGrid">
         <div class="opt-card chosen" data-mode="classic" onclick="pickMode(this)">
+          <div class="opt-title">🔗 Level 3 — Match</div>
+          <div class="opt-sub">Connect word ↔ meaning</div>
+        </div>
+        <div class="opt-card" data-mode="l1" onclick="pickMode(this)">
+          <div class="opt-title">📝 Level 1 — Fill in</div>
+          <div class="opt-sub">Choose a / an / some</div>
+        </div>
+        <div class="opt-card" data-mode="l2" onclick="pickMode(this)">
+          <div class="opt-title">🔍 Level 2 — Fix error</div>
+          <div class="opt-sub">Find & correct the mistake</div>
+        </div>
+        <div class="opt-card" data-mode="l4" onclick="pickMode(this)">
+          <div class="opt-title">🧩 Level 4 — Sort</div>
+          <div class="opt-sub">Drag words to categories</div>
+        </div>
+      </div>
+
+      <div class="lbl" id="matchModeLbl">Match mode</div>
+      <div class="setup-grid" id="matchModeGrid" style="display:grid">
+        <div class="opt-card chosen" data-mode2="classic" onclick="pickMatchMode(this)">
           <div class="opt-title">⚡ Classic</div>
           <div class="opt-sub">Take turns, most pairs wins</div>
         </div>
-        <div class="opt-card" data-mode="speed" onclick="pickMode(this)">
+        <div class="opt-card" data-mode2="speed" onclick="pickMatchMode(this)">
           <div class="opt-title">⏱ Speed Round</div>
           <div class="opt-sub">10s per turn or lose it</div>
         </div>
-        <div class="opt-card" data-mode="blitz" onclick="pickMode(this)">
+        <div class="opt-card" data-mode2="blitz" onclick="pickMatchMode(this)">
           <div class="opt-title">🔥 Blitz</div>
-          <div class="opt-sub">60 seconds total, go fast</div>
+          <div class="opt-sub">60s personal clock</div>
         </div>
-        <div class="opt-card" data-mode="survival" onclick="pickMode(this)">
+        <div class="opt-card" data-mode2="survival" onclick="pickMatchMode(this)">
           <div class="opt-title">❤️ Survival</div>
-          <div class="opt-sub">3 lives each, wrong = -1 life</div>
+          <div class="opt-sub">3 lives each</div>
         </div>
       </div>
 
@@ -379,96 +408,133 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
-// ═══════════════ WORD BANK ═══════════════
-const PAIRS=[
-  {id:'chicken',word:'a chicken',unc:'chicken — meat / poultry (food)'},
-  {id:'fish',word:'a fish',unc:'fish — seafood in general'},
-  {id:'lamb',word:'a lamb',unc:'lamb — meat from a young sheep'},
-  {id:'turkey',word:'a turkey',unc:'turkey — the meat of a turkey'},
-  {id:'coffee',word:'a coffee',unc:'coffee — the drink in general'},
-  {id:'tea',word:'a tea',unc:'tea — the drink in general'},
-  {id:'beer',word:'a beer',unc:'beer — alcohol in general'},
-  {id:'wine',word:'a wine',unc:'wine — alcohol in general'},
-  {id:'cake',word:'a cake',unc:'cake — baked goods in general'},
-  {id:'chocolate',word:'a chocolate',unc:'chocolate — the sweet material'},
-  {id:'wood',word:'a wood',unc:'wood — timber / the material'},
-  {id:'stone',word:'a stone',unc:'stone — the rock material'},
-  {id:'iron',word:'an iron',unc:'iron — the metal element'},
-  {id:'glass',word:'a glass',unc:'glass — the transparent material'},
-  {id:'paper',word:'a paper',unc:'paper — the writing material'},
-  {id:'fire',word:'a fire',unc:'fire — flames in general'},
-  {id:'light',word:'a light',unc:'light — illumination / brightness'},
-  {id:'noise',word:'a noise',unc:'noise — background sound in general'},
-  {id:'sound',word:'a sound',unc:'sound — audio in general'},
-  {id:'paint',word:'a paint',unc:'paint — the liquid coating material'},
-  {id:'cloth',word:'a cloth',unc:'cloth — fabric / textile material'},
-  {id:'tin',word:'a tin',unc:'tin — the metal material'},
-  {id:'copper',word:'a copper',unc:'copper — the metal element'},
-  {id:'work',word:'a work',unc:'work — effort / labour in general'},
-  {id:'experience',word:'an experience',unc:'experience — knowledge over time'},
-  {id:'time',word:'a time',unc:'time — the general concept of duration'},
-  {id:'room',word:'a room',unc:'room — available space'},
-  {id:'life',word:'a life',unc:'life — the concept of being alive'},
-  {id:'love',word:'a love',unc:'love — the feeling in general'},
-  {id:'fear',word:'a fear',unc:'fear — the emotion in general'},
-  {id:'hope',word:'a hope',unc:'hope — optimism in general'},
-  {id:'dream',word:'a dream',unc:'dream — the concept of dreaming'},
-  {id:'thought',word:'a thought',unc:'thought — the process of thinking'},
-  {id:'beauty',word:'a beauty',unc:'beauty — attractiveness in general'},
-  {id:'success',word:'a success',unc:'success — achievement in general'},
-  {id:'failure',word:'a failure',unc:'failure — lack of success in general'},
-  {id:'pleasure',word:'a pleasure',unc:'pleasure — enjoyment in general'},
-  {id:'surprise',word:'a surprise',unc:'surprise — the feeling of being surprised'},
-  {id:'hair',word:'a hair',unc:'hair — all the hair on your head'},
-  {id:'water',word:'a water',unc:'water — the liquid H₂O'},
-  {id:'snow',word:'a snow',unc:'snow — frozen precipitation in general'},
-  {id:'rain',word:'a rain',unc:'rain — precipitation in general'},
-  {id:'wind',word:'a wind',unc:'wind — moving air in general'},
-  {id:'cloud',word:'a cloud',unc:'cloud — water vapour in the sky'},
-  {id:'fog',word:'a fog',unc:'fog — thick mist in general'},
-  {id:'storm',word:'a storm',unc:'storm — bad weather in general'},
-  {id:'wave',word:'a wave',unc:'wave — the physics of waves'},
-  {id:'language',word:'a language',unc:'language — communication in general'},
-  {id:'culture',word:'a culture',unc:'culture — civilisation in general'},
-  {id:'history',word:'a history',unc:'history — the study of past events'},
-  {id:'art',word:'an art',unc:'art — creative expression in general'},
-  {id:'sport',word:'a sport',unc:'sport — physical activity in general'},
-  {id:'business',word:'a business',unc:'business — commerce in general'},
-  {id:'crime',word:'a crime',unc:'crime — illegal activity in general'},
-  {id:'medicine',word:'a medicine',unc:'medicine — the science of health'},
-  {id:'technology',word:'a technology',unc:'technology — tech in general'},
-  {id:'science',word:'a science',unc:'science — knowledge through experiment'},
-  {id:'laugh',word:'a laugh',unc:'laugh — laughter in general'},
-  {id:'cry',word:'a cry',unc:'cry — crying / weeping in general'},
-  {id:'talk',word:'a talk',unc:'talk — conversation in general'},
-  {id:'run',word:'a run',unc:'run — running in general'},
-  {id:'swim',word:'a swim',unc:'swim — swimming in general'},
-  {id:'look',word:'a look',unc:'look — appearance in general'},
-  {id:'read',word:'a read',unc:'read — reading in general'},
-  {id:'walk',word:'a walk',unc:'walk — walking in general'},
-  {id:'sand',word:'a sand',unc:'sand — granular material on beaches'},
-  {id:'knowledge',word:'a knowledge',unc:'knowledge — information in general'},
-];
-const shuffle=a=>[...a].sort(()=>Math.random()-.5);
-const pickPairs=(n=6)=>shuffle(PAIRS).slice(0,n);
+// ═══════════════════════════════════════
+//  DATA — 4 task types
+// ═══════════════════════════════════════
 
-// ═══════════════ STATE ═══════════════
-const ABLY_KEY='w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
-const P_COLORS=['#9088ff','#ff5fa0','#3fffa8','#ffd166'];
-const P_BG=['rgba(108,99,255,.18)','rgba(255,95,160,.18)','rgba(63,255,168,.14)','rgba(255,209,102,.14)'];
+// Task 1: fill a / an / some
+const T1 = [
+  {s:'I need ___ advice.',      a:'some', opts:['a','an','some']},
+  {s:'She bought ___ apple.',   a:'an',   opts:['a','an','some']},
+  {s:'There is ___ water.',     a:'some', opts:['a','an','some']},
+  {s:'He has ___ idea.',        a:'an',   opts:['a','an','some']},
+  {s:'I want ___ coffee.',      a:'some', opts:['a','an','some']},
+  {s:'Can I have ___ orange?',  a:'an',   opts:['a','an','some']},
+  {s:'She gave me ___ information.',a:'some',opts:['a','an','some']},
+  {s:'I saw ___ elephant.',     a:'an',   opts:['a','an','some']},
+  {s:'We need ___ furniture.',  a:'some', opts:['a','an','some']},
+  {s:'He is ___ honest man.',   a:'an',   opts:['a','an','some']},
+  {s:'There is ___ milk in the fridge.',a:'some',opts:['a','an','some']},
+  {s:'I have ___ question.',    a:'a',    opts:['a','an','some']},
+  {s:'She has ___ umbrella.',   a:'an',   opts:['a','an','some']},
+  {s:'We heard ___ noise.',     a:'a',    opts:['a','an','some']},
+  {s:'Can I have ___ sugar?',   a:'some', opts:['a','an','some']},
+  {s:'It was ___ easy task.',   a:'an',   opts:['a','an','some']},
+  {s:'He made ___ progress.',   a:'some', opts:['a','an','some']},
+  {s:'I need ___ pen.',         a:'a',    opts:['a','an','some']},
+  {s:'There was ___ accident.',  a:'an',   opts:['a','an','some']},
+  {s:'She bought ___ bread.',   a:'some', opts:['a','an','some']},
+];
+
+// Task 2: find & fix the error
+const T2 = [
+  {wrong:'I have a good news.',       right:'I have good news.',         explain:'"news" is uncountable — no article'},
+  {wrong:'She gave me an advice.',    right:'She gave me some advice.',   explain:'"advice" is uncountable — use "some"'},
+  {wrong:'He has a lot of informations.',right:'He has a lot of information.',explain:'"information" has no plural'},
+  {wrong:'I need a furniture.',       right:'I need some furniture.',     explain:'"furniture" is uncountable'},
+  {wrong:'She has a beautiful hair.', right:'She has beautiful hair.',    explain:'"hair" (in general) is uncountable'},
+  {wrong:'We made a great progress.', right:'We made great progress.',    explain:'"progress" is uncountable'},
+  {wrong:'He bought a new equipments.',right:'He bought new equipment.',  explain:'"equipment" is uncountable'},
+  {wrong:'I have a homework to do.',  right:'I have homework to do.',     explain:'"homework" is uncountable'},
+  {wrong:'She gave us an useful advice.',right:'She gave us useful advice.',explain:'"advice" is uncountable; "an" → no article'},
+  {wrong:'There are a lot of traffics.',right:'There is a lot of traffic.',explain:'"traffic" is uncountable'},
+  {wrong:'He did a good job.',        right:'He did a good job.',         explain:'✅ This sentence is already correct!', correct:true},
+  {wrong:'I need some waters.',       right:'I need some water.',         explain:'"water" is uncountable — no plural'},
+  {wrong:'She has a knowledge of French.',right:'She has knowledge of French.',explain:'"knowledge" is uncountable'},
+  {wrong:'Can I have an ice cream?',  right:'Can I have some ice cream?', explain:'"ice cream" is uncountable — use "some"'},
+  {wrong:'They gave me a lot of luggage.',right:'They gave me a lot of luggage.',explain:'✅ Already correct — "luggage" is uncountable', correct:true},
+];
+
+// Task 3: two meanings (match — existing mechanic)
+const PAIRS = [
+  {id:'chicken',  word:'a chicken',     unc:'chicken — meat / poultry (food)'},
+  {id:'paper',    word:'a paper',       unc:'paper — the writing material'},
+  {id:'glass',    word:'a glass',       unc:'glass — the transparent material'},
+  {id:'work',     word:'a work',        unc:'work — effort / labour in general'},
+  {id:'light',    word:'a light',       unc:'light — illumination / brightness'},
+  {id:'experience',word:'an experience',unc:'experience — knowledge over time'},
+  {id:'iron',     word:'an iron',       unc:'iron — the metal element'},
+  {id:'room',     word:'a room',        unc:'room — available space'},
+  {id:'wood',     word:'a wood',        unc:'wood — timber / the material'},
+  {id:'time',     word:'a time',        unc:'time — the general concept of duration'},
+  {id:'stone',    word:'a stone',       unc:'stone — the rock material'},
+  {id:'hair',     word:'a hair',        unc:'hair — all the hair on your head'},
+  {id:'fire',     word:'a fire',        unc:'fire — flames in general'},
+  {id:'noise',    word:'a noise',       unc:'noise — background sound'},
+  {id:'coffee',   word:'a coffee',      unc:'coffee — the drink in general'},
+  {id:'fish',     word:'a fish',        unc:'fish — seafood in general'},
+  {id:'lamb',     word:'a lamb',        unc:'lamb — meat from a young sheep'},
+  {id:'art',      word:'an art',        unc:'art — creative expression in general'},
+  {id:'sport',    word:'a sport',       unc:'sport — physical activity in general'},
+  {id:'business', word:'a business',    unc:'business — commerce in general'},
+  {id:'run',      word:'a run',         unc:'run — running in general'},
+  {id:'walk',     word:'a walk',        unc:'walk — walking in general'},
+  {id:'laugh',    word:'a laugh',       unc:'laugh — laughter in general'},
+  {id:'talk',     word:'a talk',        unc:'talk — conversation in general'},
+  {id:'dream',    word:'a dream',       unc:'dream — the concept of dreaming'},
+  {id:'fear',     word:'a fear',        unc:'fear — the emotion in general'},
+  {id:'love',     word:'a love',        unc:'love — the feeling in general'},
+  {id:'life',     word:'a life',        unc:'life — the concept of being alive'},
+  {id:'cloud',    word:'a cloud',       unc:'cloud — water vapour in the sky'},
+  {id:'storm',    word:'a storm',       unc:'storm — bad weather in general'},
+  {id:'wave',     word:'a wave',        unc:'wave — the physics of waves'},
+  {id:'culture',  word:'a culture',     unc:'culture — civilisation in general'},
+  {id:'crime',    word:'a crime',       unc:'crime — illegal activity in general'},
+  {id:'science',  word:'a science',     unc:'science — knowledge through experiment'},
+  {id:'language', word:'a language',    unc:'language — communication in general'},
+];
+
+// Task 4: drag & drop sort
+const T4_SETS = [
+  {
+    countable:  ['apple','book','chair','dog','city','idea','question','window'],
+    uncountable:['water','information','sugar','music','air','rice','money','love'],
+  },
+  {
+    countable:  ['table','car','elephant','phone','letter','friend','coin','key'],
+    uncountable:['advice','furniture','traffic','knowledge','bread','butter','sand','milk'],
+  },
+  {
+    countable:  ['bottle','flower','shirt','mistake','beach','dream','bridge','planet'],
+    uncountable:['equipment','progress','weather','homework','paper','glass','iron','wood'],
+  },
+];
+
+const shuffle = a => [...a].sort(() => Math.random() - .5);
+const pickPairs = (n=6) => shuffle(PAIRS).slice(0, n);
+
+// ═══════════════════════════════════════
+//  ABLY / CONNECTION STATE
+// ═══════════════════════════════════════
+const ABLY_KEY = 'w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
+const P_COLORS = ['#9088ff','#ff5fa0','#3fffa8','#ffd166'];
+const P_BG     = ['rgba(108,99,255,.18)','rgba(255,95,160,.18)','rgba(63,255,168,.14)','rgba(255,209,102,.14)'];
 
 let ablyClient=null, ablyChannel=null;
 let myName='', myRole='', myIdx=0, roomCode='';
-let players={};   // {0:'Alice', 1:'Bob', ...}
-let maxPlayers=2;
+let players={}, maxPlayers=2;
 let gs=null;
-let selL=null, selR=null;
 let myStreak=0, powerups={freeze:2,hint:2,shuffle:2}, frozenUntil=0;
-let tempRevealed=new Set(); // cards temporarily shown after wrong guess in hard/expert
 let chosenMode='classic', chosenDiff='easy', chosenPairs=6, chosenMaxPlayers=2;
 let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
+// match task state
+let selL=null, selR=null, tempRevealed=new Set();
+// per-round quiz state
+let qState=null; // {level, qIdx, score, total, data}
 
-// ═══════════════ UTILS ═══════════════
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
 const $=id=>document.getElementById(id);
 const go=id=>{document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');};
 function toast(msg,type=''){const t=$('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2500);}
@@ -476,14 +542,28 @@ const showBadge=t=>{$('roomBadge').textContent=t;$('roomBadge').style.display=''
 const hideBadge=()=>$('roomBadge').style.display='none';
 const myTurn=()=>gs&&gs.turn===myIdx;
 const numP=()=>Object.keys(players).length;
-function pickMode(el){document.querySelectorAll('#modeGrid .opt-card').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenMode=el.dataset.mode;}
+function pickMode(el){
+  document.querySelectorAll('#modeGrid .opt-card').forEach(c=>c.classList.remove('chosen'));
+  el.classList.add('chosen'); chosenMode=el.dataset.mode;
+  // show match sub-modes only for Level 3 match
+  const isMatch=chosenMode==='classic'||!['l1','l2','l4'].includes(chosenMode);
+  const grid=document.getElementById('matchModeGrid');
+  const lbl=document.getElementById('matchModeLbl');
+  if(grid){grid.style.display=chosenMode==='classic'?'grid':'none';}
+  if(lbl){lbl.style.display=chosenMode==='classic'?'':'none';}
+}
+function pickMatchMode(el){
+  document.querySelectorAll('[data-mode2]').forEach(c=>c.classList.remove('chosen'));
+  el.classList.add('chosen'); chosenMode=el.dataset.mode2;
+}
 function pickDiff(el){document.querySelectorAll('#diffGrid .opt-card').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenDiff=el.dataset.diff;}
 function pickMaxPlayers(el){document.querySelectorAll('[data-mp]').forEach(c=>c.classList.remove('chosen'));el.classList.add('chosen');chosenMaxPlayers=parseInt(el.dataset.mp);}
 function updatePairsLabel(v){$('pairsLabel').textContent=v;chosenPairs=parseInt(v);}
 
-// ═══════════════ ABLY ═══════════════
+// ═══════════════════════════════════════
+//  ABLY
+// ═══════════════════════════════════════
 function send(data){if(ablyChannel)ablyChannel.publish('msg',JSON.stringify(data));}
-
 async function initAbly(){
   if(ablyClient){try{ablyClient.close();}catch(e){}}
   ablyClient=new Ably.Realtime({key:ABLY_KEY,echoMessages:false});
@@ -498,7 +578,9 @@ function subscribeChannel(name){
   ablyChannel.subscribe('msg',msg=>{try{onData(JSON.parse(msg.data));}catch(e){}});
 }
 
-// ═══════════════ CREATE / JOIN ═══════════════
+// ═══════════════════════════════════════
+//  CREATE / JOIN
+// ═══════════════════════════════════════
 async function createRoom(){
   const name=$('cName').value.trim();
   if(!name){toast('Enter your name','err');return;}
@@ -512,7 +594,6 @@ async function createRoom(){
   btn.disabled=false; btn.textContent='Create Room';
   showBadge('Room '+roomCode); go('sLobby'); renderLobby();
 }
-
 async function joinRoom(){
   const name=$('jName').value.trim(), code=$('jCode').value.trim();
   const err=$('joinErr'); err.style.display='none';
@@ -527,14 +608,15 @@ async function joinRoom(){
   send({type:'hello',name:myName});
 }
 
-// ═══════════════ LOBBY ═══════════════
+// ═══════════════════════════════════════
+//  LOBBY
+// ═══════════════════════════════════════
 function renderLobby(){
   $('lobbyCode').textContent=roomCode;
   const maxP=maxPlayers;
   let html='';
   for(let i=0;i<maxP;i++){
-    const n=players[i]||null;
-    const isMe=n&&n===myName&&myIdx===i;
+    const n=players[i]||null, isMe=n&&n===myName&&myIdx===i;
     html+=`<div class="slot ${n?'on':''} ${isMe?'me':''}">
       <div class="av" style="background:${P_BG[i]};color:${P_COLORS[i]};width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${n?n[0].toUpperCase():'?'}</div>
       <div><div class="sn">${n?n+(isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':''):'Waiting...'}</div>
@@ -542,8 +624,7 @@ function renderLobby(){
       <div class="dot ${n?'dot-on'+(i>0?' dot-pulse':''):'dot-off'}"></div></div>`;
   }
   $('slots').innerHTML=html;
-  const joined=numP();
-  const sa=$('startArea'), li=$('lobbyInfo');
+  const joined=numP(), sa=$('startArea'), li=$('lobbyInfo');
   if(myRole==='host'){
     sa.innerHTML=joined>=2
       ?`<button class="btn bp bfull" onclick="startGame()">Start Game ▶ (${joined} players)</button>`
@@ -555,50 +636,35 @@ function renderLobby(){
   }
 }
 
-// ═══════════════ MESSAGES ═══════════════
+// ═══════════════════════════════════════
+//  MESSAGES
+// ═══════════════════════════════════════
 function onData(msg){
   switch(msg.type){
-
     case 'hello':{
       if(myRole!=='host') break;
       const taken=numP();
       if(taken>=maxPlayers){send({type:'room_full'});break;}
-      const idx=taken;
-      players[idx]=msg.name;
-      // broadcast updated lobby to everyone
+      players[taken]=msg.name;
       send({type:'lobby_update',players,maxPlayers});
-      toast(msg.name+' joined!','ok');
-      renderLobby();
-      break;
+      toast(msg.name+' joined!','ok'); renderLobby(); break;
     }
-
-    case 'lobby_update':{
+    case 'lobby_update':
       players=msg.players; maxPlayers=msg.maxPlayers;
-      // find my slot
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
-      renderLobby();
-      break;
-    }
-
+      renderLobby(); break;
     case 'room_full':
       toast('Room is full!','err'); leaveRoom(); break;
-
-    case 'start':{
-      gs=msg.state; maxPlayers=gs.maxPlayers;
-      players=gs.players;
+    case 'start':
+      gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
-      gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
+      gs.myTimeLeft=gs.mode==='blitz'?60000:null;
       myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
       startRender(); go('sGame'); break;
-    }
-
-    case 'state':{
+    case 'state':
       gs=msg.state;
       if(gs.status==='finished'){clearAllTimers();setTimeout(showResult,350);}
-      else updateRender();
-      break;
-    }
-
+      else updateRender(); break;
     case 'powerup':
       if(msg.action==='freeze'&&msg.target===myIdx){
         frozenUntil=Date.now()+8000;
@@ -606,105 +672,326 @@ function onData(msg){
         renderScoreBar(); renderStatus();
       }
       if(msg.action==='shuffle_opp'&&msg.target===myIdx){
-        // shuffle MY right cards visually
         const unmatched=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
         const sh=shuffle(unmatched); let si=0;
         gs.rightCards=gs.rightCards.map(c=>gs.matched.includes(c.id)?c:sh[si++]);
         $('rightCol').querySelectorAll('.card:not(.matched)').forEach(el=>el.classList.add('shuffling'));
-        setTimeout(()=>{
-          $('rightCol').innerHTML='';
-          gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));
-          toast('🔀 Opponent shuffled your cards!','err');
-        },500);
+        setTimeout(()=>{$('rightCol').innerHTML='';gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));toast('🔀 Opponent shuffled your cards!','err');},500);
       }
       break;
-
     case 'player_left':{
-      const leftIdx=msg.idx;
-      const leftName=msg.name||('Player '+(leftIdx+1));
+      const leftIdx=msg.idx, leftName=msg.name||('Player '+(leftIdx+1));
       if(!gs||gs.status!=='playing') break;
-
       if(msg.numPlayers<=2){
-        // 1v1 — end the game immediately
-        gs.status='finished'; gs.finishedAt=Date.now();
-        clearAllTimers();
-        toast(leftName+' left the match','err');
-        setTimeout(showResult,600);
+        gs.status='finished'; gs.finishedAt=Date.now(); clearAllTimers();
+        toast(leftName+' left the match','err'); setTimeout(showResult,600);
       } else {
-        // 3-4 players — remove player and skip their future turns
-        toast(leftName+' left — their turns will be skipped','info');
-        delete gs.players[leftIdx];
-        gs.numPlayers=Object.keys(gs.players).length;
-        // rebuild turn index order (skip gaps)
-        // if it was their turn, advance now
+        toast(leftName+' left — turns will be skipped','info');
+        delete gs.players[leftIdx]; gs.numPlayers=Object.keys(gs.players).length;
         if(gs.turn===leftIdx){
-          gs.turn=(gs.turn+1)%msg.numPlayers;
-          // keep advancing if we land on another missing player
-          let safety=0;
-          while(!gs.players[gs.turn]&&safety++<4) gs.turn=(gs.turn+1)%msg.numPlayers;
+          let next=(gs.turn+1)%msg.numPlayers, s=0;
+          while(!gs.players[next]&&s++<4) next=(next+1)%msg.numPlayers;
+          gs.turn=next;
         }
         updateRender();
       }
       break;
     }
-
-    case 'rematch':{
+    case 'rematch':
       gs=msg.state; maxPlayers=gs.maxPlayers; players=gs.players;
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
-      gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
+      gs.myTimeLeft=gs.mode==='blitz'?60000:null;
       myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
       startRender(); go('sGame'); break;
-    }
+
+    // ── QUIZ messages (levels 1,2,4) ──
+    case 'quiz_start':
+      qState=msg.qState;
+      renderQuiz(); go('sGame'); break;
+    case 'quiz_answer':
+      // opponent answered — update their score display
+      if(msg.idx!==myIdx) updateOpponentQuizScore(msg.idx,msg.score); break;
+    case 'quiz_finish':
+      showQuizResult(msg.scores); break;
   }
 }
 
-// ═══════════════ START GAME ═══════════════
+// ═══════════════════════════════════════
+//  START GAME — routes to correct level
+// ═══════════════════════════════════════
 function startGame(){
-  const n=chosenPairs||6;
-  const pairs=pickPairs(n);
-  const np=numP();
+  const level=chosenMode; // classic=L3 match, 'l1','l2','l4' for others
+  if(level==='l1'||level==='l2'||level==='l4'){
+    startQuizGame(level); return;
+  }
+  // Level 3: match game (existing)
+  const n=chosenPairs||6, pairs=pickPairs(n), np=numP();
   const scores={}, lives={};
   for(let i=0;i<np;i++){scores[i]=0; lives[i]=3;}
   gs={
     leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
     rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),
     matched:[], scores, lives,
-    turn:0,
-    numPlayers:np,
-    players:{...players},
-    status:'playing',
-    startedAt:Date.now(), finishedAt:null,
+    turn:0, numPlayers:np, players:{...players},
+    status:'playing', startedAt:Date.now(), finishedAt:null,
     mode:chosenMode, diff:chosenDiff,
     maxPlayers:chosenMaxPlayers,
   };
-  // myTimeLeft is local per-player — not shared in gs
-  gs.myTimeLeft = chosenMode==='blitz' ? 60000 : null;
+  gs.myTimeLeft=chosenMode==='blitz'?60000:null;
   send({type:'start',state:gs});
   myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
   startRender(); go('sGame');
 }
 
-// ═══════════════ RENDER ═══════════════
+function startQuizGame(level){
+  let data;
+  if(level==='l1') data=shuffle(T1).slice(0,8);
+  else if(level==='l2') data=shuffle(T2).slice(0,6);
+  else data=T4_SETS[Math.floor(Math.random()*T4_SETS.length)];
+  const np=numP(), scores={};
+  for(let i=0;i<np;i++) scores[i]=0;
+  qState={level, qIdx:0, total:level==='l4'?1:data.length, data, scores, numPlayers:np, players:{...players}, status:'playing', startedAt:Date.now()};
+  send({type:'quiz_start',qState});
+  renderQuiz(); go('sGame');
+}
+
+// ═══════════════════════════════════════
+//  QUIZ RENDER
+// ═══════════════════════════════════════
+function renderQuiz(){
+  if(!qState) return;
+  const wrap=$('leftCol'); $('rightCol').innerHTML=''; $('midCol').innerHTML='';
+  $('blitzTimerWrap').style.display='none'; $('turnTimerWrap').style.display='none';
+  $('powerupBar').style.display='none';
+  // build score bar
+  renderQuizScoreBar();
+  // render question
+  if(qState.level==='l1') renderL1();
+  else if(qState.level==='l2') renderL2();
+  else if(qState.level==='l4') renderL4();
+  renderQuizStatus();
+}
+
+function renderQuizScoreBar(){
+  const np=qState.numPlayers; let html='';
+  for(let i=0;i<np;i++){
+    const name=qState.players[i]||'P'+(i+1), isMe=i===myIdx;
+    html+=`<div class="sc">
+      <div class="av" style="width:26px;height:26px;border-radius:50%;background:${P_BG[i]};color:${P_COLORS[i]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${name[0].toUpperCase()}</div>
+      <div class="scname">${name}${isMe?' <span style="color:var(--m);font-size:10px">(you)</span>':''}</div>
+      <div class="scnum" style="color:${P_COLORS[i]}" id="qscore_${i}">${qState.scores[i]||0}</div>
+    </div>`;
+  }
+  $('scoreBar').innerHTML=html;
+  const left=qState.total-qState.qIdx;
+  $('statsBar').innerHTML=`
+    <div class="pill"><span class="pv" id="pLeft">${left}</span><span class="pl">left</span></div>
+    <div class="pill"><span class="pv" id="pTime">0s</span></div>
+    <div class="pill"><span class="pv">${{l1:'📝 Level 1',l2:'🔍 Level 2',l4:'🧩 Level 4'}[qState.level]}</span></div>`;
+}
+
+function renderQuizStatus(){
+  $('statusBar').innerHTML=`Question ${qState.qIdx+1} of ${qState.total}`;
+}
+
+function updateOpponentQuizScore(idx,score){
+  qState.scores[idx]=score;
+  const el=$('qscore_'+idx); if(el) el.textContent=score;
+}
+
+// ─── Level 1: a / an / some ───
+function renderL1(){
+  if(qState.qIdx>=qState.data.length){finishQuiz();return;}
+  const q=qState.data[qState.qIdx];
+  const gameArea=$('leftCol');
+  $('rightCol').innerHTML=''; $('midCol').innerHTML='';
+  // use full board area — put everything in leftCol spanning full width
+  gameArea.style.gridColumn='1 / -1';
+  gameArea.innerHTML=`
+    <div style="max-width:560px;margin:0 auto;padding:1rem 0">
+      <div style="font-size:12px;color:var(--m);margin-bottom:1rem">Choose the correct article or determiner:</div>
+      <div style="background:var(--s1);border:1px solid var(--b2);border-radius:var(--rl);padding:1.5rem 1.75rem;margin-bottom:1.5rem">
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;letter-spacing:-.01em;line-height:1.5">
+          ${q.s.replace('___','<span style="background:rgba(108,99,255,.15);border-bottom:2px solid var(--acl);padding:0 6px;border-radius:4px;color:var(--acl)">___</span>')}
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        ${q.opts.map(o=>`<button class="btn bs" style="flex:1;font-size:1rem;padding:14px;font-family:'Syne',sans-serif;font-weight:700" onclick="answerL1('${o}')">${o}</button>`).join('')}
+      </div>
+      <div id="qfeedback" style="margin-top:1rem;min-height:32px"></div>
+    </div>`;
+}
+
+function answerL1(ans){
+  const q=qState.data[qState.qIdx];
+  const correct=ans===q.a;
+  const fb=$('qfeedback');
+  // disable buttons
+  document.querySelectorAll('#leftCol .btn').forEach(b=>b.disabled=true);
+  // highlight
+  document.querySelectorAll('#leftCol .btn').forEach(b=>{
+    if(b.textContent===q.a) b.style.background='rgba(63,255,168,.2)';
+    else if(b.textContent===ans&&!correct) b.style.background='rgba(255,71,87,.2)';
+  });
+  if(correct){
+    qState.scores[myIdx]=(qState.scores[myIdx]||0)+1;
+    fb.innerHTML=`<span style="color:var(--gr);font-weight:500">✓ Correct!</span>`;
+  } else {
+    fb.innerHTML=`<span style="color:var(--rd)">✗ Wrong.</span> <span style="color:var(--m)">Answer: <b style="color:var(--text)">${q.a}</b></span>`;
+  }
+  send({type:'quiz_answer',idx:myIdx,score:qState.scores[myIdx]});
+  setTimeout(()=>{qState.qIdx++;renderL1();},1200);
+}
+
+// ─── Level 2: find the error ───
+function renderL2(){
+  if(qState.qIdx>=qState.data.length){finishQuiz();return;}
+  const q=qState.data[qState.qIdx];
+  const gameArea=$('leftCol');
+  gameArea.innerHTML=`
+    <div style="max-width:580px;margin:0 auto;padding:1rem 0">
+      <div style="font-size:12px;color:var(--m);margin-bottom:1rem">Is this sentence correct or does it have an error?</div>
+      <div style="background:var(--s1);border:1px solid var(--b2);border-radius:var(--rl);padding:1.5rem 1.75rem;margin-bottom:1.5rem">
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:700">"${q.wrong}"</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:1rem">
+        <button class="btn bs" style="flex:1;font-size:.95rem;padding:13px" onclick="answerL2(true)">✅ Correct</button>
+        <button class="btn bs" style="flex:1;font-size:.95rem;padding:13px" onclick="answerL2(false)">❌ Has error</button>
+      </div>
+      <div id="qfeedback" style="min-height:60px"></div>
+    </div>`;
+}
+
+function answerL2(saysCorrect){
+  const q=qState.data[qState.qIdx];
+  const isActuallyCorrect=!!q.correct;
+  const correct=saysCorrect===isActuallyCorrect;
+  document.querySelectorAll('#leftCol .btn').forEach(b=>b.disabled=true);
+  const fb=$('qfeedback');
+  if(correct){
+    qState.scores[myIdx]=(qState.scores[myIdx]||0)+1;
+    fb.innerHTML=`<span style="color:var(--gr);font-weight:500">✓ Correct!</span>
+      ${!isActuallyCorrect?`<div style="margin-top:8px;font-size:13px;color:var(--m)">✅ <b style="color:var(--text)">${q.right}</b><br><span style="font-size:11px">${q.explain}</span></div>`:`<div style="margin-top:6px;font-size:12px;color:var(--m)">${q.explain}</div>`}`;
+  } else {
+    fb.innerHTML=`<span style="color:var(--rd);font-weight:500">✗ Wrong.</span>
+      <div style="margin-top:8px;font-size:13px;color:var(--m)">✅ <b style="color:var(--text)">${q.right}</b><br><span style="font-size:11px">${q.explain}</span></div>`;
+  }
+  send({type:'quiz_answer',idx:myIdx,score:qState.scores[myIdx]});
+  setTimeout(()=>{qState.qIdx++;renderL2();},2000);
+}
+
+// ─── Level 4: drag & drop ───
+let dragWord=null;
+function renderL4(){
+  const set=qState.data;
+  const all=shuffle([...set.countable,...set.uncountable]);
+  const gameArea=$('leftCol');
+  gameArea.innerHTML=`
+    <div style="max-width:700px;margin:0 auto;padding:1rem 0">
+      <div style="font-size:12px;color:var(--m);margin-bottom:1rem">Drag each word into the correct category:</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.2rem" id="wordBank">
+        ${all.map(w=>`<div class="drag-word" draggable="true" id="dw_${w}" ondragstart="onDragStart('${w}')" onclick="onWordClick('${w}')">${w}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="drop-zone" id="dz_countable" ondragover="event.preventDefault()" ondrop="onDrop('countable')">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--acl);margin-bottom:8px;font-weight:500">Countable ✓</div>
+          <div id="dz_countable_items" style="display:flex;flex-wrap:wrap;gap:6px;min-height:30px"></div>
+        </div>
+        <div class="drop-zone" id="dz_uncountable" ondragover="event.preventDefault()" ondrop="onDrop('uncountable')">
+          <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--pk);margin-bottom:8px;font-weight:500">Uncountable ✗</div>
+          <div id="dz_uncountable_items" style="display:flex;flex-wrap:wrap;gap:6px;min-height:30px"></div>
+        </div>
+      </div>
+      <button class="btn bp" style="margin-top:1.2rem;width:100%" onclick="checkL4()">Check answers</button>
+      <div id="qfeedback" style="margin-top:1rem;min-height:40px"></div>
+    </div>`;
+}
+
+function onDragStart(w){dragWord=w;}
+function onWordClick(w){
+  // mobile fallback: toggle selection then place in next zone
+  if(!dragWord){dragWord=w;}
+  else if(dragWord===w){dragWord=null;}
+  else{onDrop('countable');} // simplified
+}
+function onDrop(zone){
+  if(!dragWord) return;
+  const el=$('dw_'+dragWord);
+  if(el) el.style.display='none';
+  const items=$('dz_'+zone+'_items');
+  const tag=document.createElement('div');
+  tag.className='drag-placed'; tag.textContent=dragWord; tag.dataset.word=dragWord; tag.dataset.zone=zone;
+  tag.onclick=()=>{tag.remove(); const orig=$('dw_'+dragWord||tag.dataset.word); if(orig) orig.style.display='';};
+  items.appendChild(tag);
+  dragWord=null;
+}
+
+function checkL4(){
+  const set=qState.data;
+  let correct=0, total=set.countable.length+set.uncountable.length;
+  const placed=document.querySelectorAll('.drag-placed');
+  placed.forEach(el=>{
+    const w=el.dataset.word, zone=el.dataset.zone;
+    const isRight=(zone==='countable'&&set.countable.includes(w))||(zone==='uncountable'&&set.uncountable.includes(w));
+    el.style.background=isRight?'rgba(63,255,168,.2)':'rgba(255,71,87,.2)';
+    el.style.borderColor=isRight?'rgba(63,255,168,.4)':'rgba(255,71,87,.4)';
+    if(isRight) correct++;
+  });
+  qState.scores[myIdx]=correct;
+  send({type:'quiz_answer',idx:myIdx,score:correct});
+  $('qfeedback').innerHTML=`<span style="color:var(--gr);font-size:1rem;font-weight:500">${correct}/${total} correct</span>`;
+  document.querySelector('#leftCol .btn.bp').textContent='Done ✓';
+  document.querySelector('#leftCol .btn.bp').onclick=finishQuiz;
+}
+
+function finishQuiz(){
+  send({type:'quiz_finish',scores:qState.scores});
+  showQuizResult(qState.scores);
+}
+
+function showQuizResult(scores){
+  clearAllTimers();
+  const np=qState.numPlayers;
+  let maxSc=-1, winnerIdx=0;
+  for(let i=0;i<np;i++){if((scores[i]||0)>maxSc){maxSc=scores[i]||0;winnerIdx=i;}}
+  const iWin=winnerIdx===myIdx;
+  const isTie=Object.values(scores).filter(s=>s===maxSc).length>1;
+  $('rTrophy').textContent=isTie?'🤝':iWin?'🏆':'😅';
+  $('rTitle').textContent=isTie?"It's a tie!":iWin?'You won!':'You lost!';
+  const secs=Math.floor((Date.now()-qState.startedAt)/1000);
+  $('rSub').textContent=(iWin?'Great grammar skills! ':'Keep practising! ')+'Finished in '+secs+'s.';
+  const sorted=[...Array(np).keys()].sort((a,b)=>(scores[b]||0)-(scores[a]||0));
+  $('rScores').innerHTML=sorted.map(i=>{
+    const isW=!isTie&&i===winnerIdx;
+    return `<div class="rsc ${isW?'win':''}">${isW?'<div class="crown">👑</div>':''}
+      <div class="rn" style="color:${P_COLORS[i]}">${qState.players[i]||'P'+(i+1)}</div>
+      <div class="rv" style="color:${isW?'var(--yl)':P_COLORS[i]}">${scores[i]||0}</div></div>`;
+  }).join('');
+  $('rStats').innerHTML=`<div class="res-stat"><strong>${secs}s</strong>duration</div><div class="res-stat"><strong>${scores[myIdx]||0}</strong>your score</div>`;
+  go('sResult');
+  if(iWin&&!isTie) launchConfetti();
+}
+
+// ═══════════════════════════════════════
+//  MATCH GAME RENDER (Level 3)
+// ═══════════════════════════════════════
 function clearAllTimers(){clearInterval(timerI);clearInterval(turnTimerI);clearInterval(blitzI);clearInterval(shuffleI);}
 
 function startRender(){
-  selL=null; selR=null;
-  clearAllTimers();
+  selL=null; selR=null; clearAllTimers();
+  $('leftCol').style.gridColumn=''; $('rightCol').style.gridColumn='';
   $('leftCol').innerHTML=''; $('rightCol').innerHTML=''; $('midCol').innerHTML='';
   gs.leftCards.forEach(c=>{
     $('leftCol').appendChild(makeCard(c,'l'));
     const ln=document.createElement('div');
-    ln.className='conn'+(gs.matched.includes(c.id)?' on':'');
-    ln.id='conn_'+c.id;
+    ln.className='conn'+(gs.matched.includes(c.id)?' on':''); ln.id='conn_'+c.id;
     $('midCol').appendChild(ln);
   });
   gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));
   renderStatsBar(); renderScoreBar(); renderStatus(); renderPowerups();
-
   if(gs.mode==='blitz'){$('blitzTimerWrap').style.display='';$('turnTimerWrap').style.display='none';startBlitzTimer();}
   else if(gs.mode==='speed'){$('blitzTimerWrap').style.display='none';$('turnTimerWrap').style.display='';if(myTurn())startTurnTimer();}
   else{$('blitzTimerWrap').style.display='none';$('turnTimerWrap').style.display='none';}
-
   if(gs.diff==='expert') shuffleI=setInterval(()=>{if(gs.status==='playing')reshuffleCards();},30000);
   timerI=setInterval(()=>{const el=$('pTime');if(el)el.textContent=Math.floor((Date.now()-gs.startedAt)/1000)+'s';},500);
 }
@@ -719,17 +1006,10 @@ function makeCard(c,side){
     d.innerHTML=`<div class="cw">${c.word}</div><span class="badge bc">countable</span><span class="chk">✓</span>`;
     if(canAct) d.onclick=()=>selectL(c.id);
   } else {
-    const isExpert=gs.diff==='expert';
-    const isHard=gs.diff==='hard';
+    const isExpert=gs.diff==='expert', isHard=gs.diff==='hard';
     const reveal=tempRevealed.has(c.id);
-    // Hard: show ONLY the description part, hide the word
-    // e.g. "art — creative expression in general" → "creative expression in general"
-    // Expert: full meaning but blurred until selected
     let displayText=c.meaning;
-    if(isHard){
-      const parts=c.meaning.split(' — ');
-      displayText=parts.length>1 ? parts.slice(1).join(' — ').trim() : c.meaning;
-    }
+    if(isHard){const parts=c.meaning.split(' — ');displayText=parts.length>1?parts.slice(1).join(' — ').trim():c.meaning;}
     const blurStyle=isExpert&&!reveal?'filter:blur(7px);user-select:none':'';
     d.innerHTML=`<div class="cw" id="cwrc_${c.id}" ${blurStyle?`style="${blurStyle}"`:''}>${displayText}</div><span class="badge bu">uncountable</span><span class="chk">✓</span>`;
     if(canAct) d.onclick=()=>selectR(c.id);
@@ -752,7 +1032,7 @@ function updateRender(){
 }
 
 function renderStatsBar(){
-  const left=gs.leftCards.length-gs.matched.length;
+  const left=(gs.leftCards||[]).length-(gs.matched||[]).length;
   const modeLabel={classic:'⚡ Classic',speed:'⏱ Speed',blitz:'🔥 Blitz',survival:'❤️ Survival'}[gs.mode]||'';
   const diffLabel={easy:'🟢 Easy',medium:'🟡 Medium',hard:'🔴 Hard',expert:'💀 Expert'}[gs.diff]||'';
   $('statsBar').innerHTML=`
@@ -763,16 +1043,11 @@ function renderStatsBar(){
 }
 
 function renderScoreBar(){
-  const np=gs.numPlayers;
-  const showLives=gs.mode==='survival';
-  const isFrozen=Date.now()<frozenUntil;
+  const np=gs.numPlayers, showLives=gs.mode==='survival', isFrozen=Date.now()<frozenUntil;
   let html='';
   for(let i=0;i<np;i++){
-    const name=gs.players[i]||'P'+(i+1);
-    const isMe=i===myIdx;
-    const isTurn=gs.turn===i;
-    const sc=gs.scores[i]||0;
-    const lives=gs.lives?.[i]??3;
+    const name=gs.players[i]||'P'+(i+1), isMe=i===myIdx, isTurn=gs.turn===i;
+    const sc=gs.scores[i]||0, lives=gs.lives?.[i]??3;
     const streakBadge=isMe&&myStreak>=3?`<span class="streak-badge">🔥 ${myStreak}</span>`:'';
     const livesHTML=showLives?'<div class="lives">'+[...Array(3)].map((_,j)=>`<span class="heart${j>=lives?' lost':''}">❤️</span>`).join('')+'</div>':'';
     const frozenMe=isMe&&isFrozen;
@@ -792,8 +1067,8 @@ function renderStatus(){
   const el=$('statusBar'); if(!el) return;
   if(Date.now()<frozenUntil){el.innerHTML=`<span class="steal-msg">❄️ You are frozen! Wait...</span>`;return;}
   if(myTurn()){
-    if(gs.diff==='expert'&&selL) el.innerHTML=`<span class="turn-msg">Good!</span> Now pick a hidden meaning to reveal it`;
-    else if(gs.diff==='expert') el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word first, then a hidden meaning`;
+    if(gs.diff==='expert'&&selL) el.innerHTML=`<span class="turn-msg">Good!</span> Now pick a hidden meaning`;
+    else if(gs.diff==='expert') el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word first`;
     else el.innerHTML=`<span class="turn-msg">Your turn</span> — pick a word, then its meaning`;
   } else {
     el.innerHTML=`${gs.players[gs.turn]||'Player '+(gs.turn+1)}'s turn…`;
@@ -803,73 +1078,39 @@ function renderStatus(){
 function renderPowerups(){
   const bar=$('powerupBar'); bar.style.display='flex';
   const shuffleBtn=gs.diff==='expert'
-    ?`<button class="pup" onclick="usePowerup('shuffle')" ${powerups.shuffle<=0?'disabled':''}>
-        <span class="pup-icon">🔀</span><span class="pup-label">Shuffle opp.</span><span class="pup-count">${powerups.shuffle}</span>
-      </button>`
-    :'';
+    ?`<button class="pup" onclick="usePowerup('shuffle')" ${powerups.shuffle<=0?'disabled':''}><span class="pup-icon">🔀</span><span class="pup-label">Shuffle opp.</span><span class="pup-count">${powerups.shuffle}</span></button>`:'';
   bar.innerHTML=`
-    <button class="pup" onclick="usePowerup('freeze')" ${powerups.freeze<=0?'disabled':''}>
-      <span class="pup-icon">❄️</span><span class="pup-label">Freeze</span><span class="pup-count">${powerups.freeze}</span>
-    </button>
-    <button class="pup" onclick="usePowerup('hint')" ${powerups.hint<=0?'disabled':''}>
-      <span class="pup-icon">💡</span><span class="pup-label">Hint</span><span class="pup-count">${powerups.hint}</span>
-    </button>
+    <button class="pup" onclick="usePowerup('freeze')" ${powerups.freeze<=0?'disabled':''}><span class="pup-icon">❄️</span><span class="pup-label">Freeze</span><span class="pup-count">${powerups.freeze}</span></button>
+    <button class="pup" onclick="usePowerup('hint')" ${powerups.hint<=0?'disabled':''}><span class="pup-icon">💡</span><span class="pup-label">Hint</span><span class="pup-count">${powerups.hint}</span></button>
     ${shuffleBtn}`;
 }
 
-// ═══════════════ TIMERS ═══════════════
+// ─── timers ───
 function startTurnTimer(){
   let secs=10; const fill=$('turnFill');
-  fill.style.width='100%'; fill.className='turn-timer-fill';
-  clearInterval(turnTimerI);
+  fill.style.width='100%'; fill.className='turn-timer-fill'; clearInterval(turnTimerI);
   turnTimerI=setInterval(()=>{
-    secs-=0.1; const pct=Math.max(0,(secs/10)*100);
-    fill.style.width=pct+'%';
-    if(pct<30) fill.className='turn-timer-fill danger';
-    else if(pct<60) fill.className='turn-timer-fill warn';
+    secs-=0.1; const pct=Math.max(0,(secs/10)*100); fill.style.width=pct+'%';
+    if(pct<30) fill.className='turn-timer-fill danger'; else if(pct<60) fill.className='turn-timer-fill warn';
     if(secs<=0){clearInterval(turnTimerI);toast("Time's up!",'err');passTurn();}
   },100);
 }
-
 function startBlitzTimer(){
-  const circ=125.6;
-  const circle=$('blitzCircle'), num=$('blitzNum');
-  clearInterval(blitzI);
+  const circ=125.6; const circle=$('blitzCircle'), num=$('blitzNum'); clearInterval(blitzI);
   blitzI=setInterval(()=>{
     if(!gs||gs.status!=='playing') return;
-
-    // Only drain time when it's MY turn
-    if(myTurn()){
-      gs.myTimeLeft=Math.max(0,(gs.myTimeLeft??60000)-200);
-      // sync to state so opponent can see our time (optional visual)
-    }
-
-    const rem=gs.myTimeLeft??60000;
-    const total=60000;
-    const s=Math.ceil(rem/1000);
-    circle.style.strokeDashoffset=circ*(1-rem/total);
-    num.textContent=s;
+    if(myTurn()) gs.myTimeLeft=Math.max(0,(gs.myTimeLeft??60000)-200);
+    const rem=gs.myTimeLeft??60000, total=60000, s=Math.ceil(rem/1000);
+    circle.style.strokeDashoffset=circ*(1-rem/total); num.textContent=s;
     circle.style.stroke=s<=10?'var(--rd)':s<=20?'var(--or)':'var(--ac)';
-
-    if(rem<=0){
-      clearInterval(blitzI);
-      gs.status='finished'; gs.finishedAt=Date.now();
-      send({type:'state',state:gs});
-      showResult();
-    }
+    if(rem<=0){clearInterval(blitzI);gs.status='finished';gs.finishedAt=Date.now();send({type:'state',state:gs});showResult();}
   },200);
 }
-
 function passTurn(){
-  let next=(gs.turn+1)%gs.numPlayers;
-  // skip slots of players who left (not in gs.players)
-  let safety=0;
+  let next=(gs.turn+1)%gs.numPlayers, safety=0;
   while(!gs.players[next]&&safety++<gs.numPlayers) next=(next+1)%gs.numPlayers;
-  gs.turn=next;
-  send({type:'state',state:gs});
-  updateRender();
+  gs.turn=next; send({type:'state',state:gs}); updateRender();
 }
-
 function reshuffleCards(){
   const unmatched=gs.rightCards.filter(c=>!gs.matched.includes(c.id));
   const sh=shuffle(unmatched); let i=0;
@@ -878,61 +1119,32 @@ function reshuffleCards(){
   setTimeout(()=>{$('rightCol').innerHTML='';gs.rightCards.forEach(c=>$('rightCol').appendChild(makeCard(c,'r')));toast('💀 Cards reshuffled!','info');},500);
 }
 
-// ═══════════════ SELECTION ═══════════════
+// ─── selection ───
 function selectL(id){
   if(!myTurn()){toast("Not your turn!",'err');return;}
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
   if(selL===id){clearSel();return;}
   if(selL) $('lc_'+selL)?.classList.remove('sel');
-  // in expert, hide previously peeked right card when we change left selection
-  if(selR&&gs.diff==='expert'){
-    const cw=document.querySelector('#rc_'+selR+' .cw');
-    if(cw) cw.style.filter='blur(7px)';
-    $('rc_'+selR)?.classList.remove('selr');
-    selR=null;
-  }
+  if(selR&&gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';$('rc_'+selR)?.classList.remove('selr');selR=null;}
   selL=id; $('lc_'+id)?.classList.add('sel');
-  // in expert show a "now pick the meaning" hint
   if(gs.diff==='expert') renderStatus();
   tryMatch();
 }
-
 function selectR(id){
   if(!myTurn()){toast("Not your turn!",'err');return;}
   if(Date.now()<frozenUntil){toast("You're frozen! ❄️",'err');return;}
-  // in expert: must pick left first
-  if(gs.diff==='expert'&&!selL){
-    toast('Pick a word on the left first!','err'); return;
-  }
-  if(selR===id){
-    // deselect — re-blur
-    $('rc_'+id)?.classList.remove('selr');
-    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+id+' .cw');if(cw)cw.style.filter='blur(7px)';}
-    selR=null; return;
-  }
-  // hide previous right selection
-  if(selR){
-    $('rc_'+selR)?.classList.remove('selr');
-    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
-  }
+  if(gs.diff==='expert'&&!selL){toast('Pick a word on the left first!','err');return;}
+  if(selR===id){$('rc_'+id)?.classList.remove('selr');if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+id+' .cw');if(cw)cw.style.filter='blur(7px)';}selR=null;return;}
+  if(selR){$('rc_'+selR)?.classList.remove('selr');if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}}
   selR=id; $('rc_'+id)?.classList.add('selr');
-
   if(gs.diff==='expert'){
-    // reveal the card so player can read it, then match after 800ms
-    const cw=document.querySelector('#rc_'+id+' .cw');
-    if(cw) cw.style.filter='none';
-    if(selL) setTimeout(()=>tryMatch(), 800);
-  } else {
-    tryMatch();
-  }
+    const cw=document.querySelector('#rc_'+id+' .cw'); if(cw) cw.style.filter='none';
+    if(selL) setTimeout(()=>tryMatch(),800);
+  } else { tryMatch(); }
 }
-
 function clearSel(){
   if(selL) $('lc_'+selL)?.classList.remove('sel');
-  if(selR){
-    $('rc_'+selR)?.classList.remove('selr');
-    if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}
-  }
+  if(selR){$('rc_'+selR)?.classList.remove('selr');if(gs.diff==='expert'){const cw=document.querySelector('#rc_'+selR+' .cw');if(cw)cw.style.filter='blur(7px)';}}
   selL=null; selR=null;
 }
 
@@ -940,153 +1152,99 @@ function tryMatch(){
   if(!selL||!selR) return;
   const l=selL, r=selR; clearSel();
   const next=(gs.turn+1)%gs.numPlayers;
-
   if(l===r){
-    myStreak++;
-    const bonus=myStreak>0&&myStreak%3===0?2:0;
-    if(bonus) toast(`🔥 ${myStreak} streak! +${1+bonus}`,'streak');
-    else toast('Correct! +1','ok');
-    gs.matched.push(l);
-    gs.scores[myIdx]+=(1+bonus);
-    gs.turn=next;
-    // finish when all pairs matched (works for ALL modes including blitz)
-    const allDone=gs.matched.length===gs.leftCards.length;
-    if(allDone){gs.status='finished';gs.finishedAt=Date.now();clearAllTimers();}
-    send({type:'state',state:gs});
-    updateRender();
+    myStreak++; const bonus=myStreak>0&&myStreak%3===0?2:0;
+    if(bonus) toast(`🔥 ${myStreak} streak! +${1+bonus}`,'streak'); else toast('Correct! +1','ok');
+    gs.matched.push(l); gs.scores[myIdx]+=(1+bonus); gs.turn=next;
+    if(gs.matched.length===gs.leftCards.length){gs.status='finished';gs.finishedAt=Date.now();clearAllTimers();}
+    send({type:'state',state:gs}); updateRender();
     if(gs.status==='finished') setTimeout(showResult,350);
   } else {
     myStreak=0;
     const le=$('lc_'+l), re=$('rc_'+r);
     le?.classList.add('wrong'); re?.classList.add('wrong');
-
     if(gs.mode==='survival'){
       gs.lives[myIdx]=Math.max(0,(gs.lives[myIdx]??3)-1);
       toast(`Wrong! ❤️ ${gs.lives[myIdx]} left`,'err');
-      // game ends only when ALL players are out of lives
       const allOut=Object.keys(gs.players).every(k=>(gs.lives[parseInt(k)]??3)<=0);
       if(allOut){gs.status='finished';gs.finishedAt=Date.now();clearAllTimers();}
-    } else {
-      toast('Wrong — turn passes','err');
-    }
-
+    } else { toast('Wrong — turn passes','err'); }
     gs.turn=next;
     setTimeout(()=>{
       le?.classList.remove('wrong'); re?.classList.remove('wrong');
-      // in expert: keep card visible for 2.5s so player can memorize, then re-blur
-      if(gs.diff==='expert'){
-        tempRevealed.add(r);
-        setTimeout(()=>{
-          tempRevealed.delete(r);
-          const cw=document.querySelector('#rc_'+r+' .cw');
-          if(cw) cw.style.filter='blur(7px)';
-        }, 2500);
-      }
+      if(gs.diff==='expert'){tempRevealed.add(r);setTimeout(()=>{tempRevealed.delete(r);const cw=document.querySelector('#rc_'+r+' .cw');if(cw)cw.style.filter='blur(7px)';},2500);}
       send({type:'state',state:gs}); updateRender();
       if(gs.status==='finished') setTimeout(showResult,350);
     },600);
   }
 }
 
-// ═══════════════ POWER-UPS ═══════════════
+// ─── powerups ───
 function usePowerup(type){
-  if(powerups[type]<=0) return;
-  powerups[type]--;
-  if(type==='freeze'){
-    const target=(myIdx+1)%gs.numPlayers;
-    send({type:'powerup',action:'freeze',target});
-    toast('❄️ Froze '+gs.players[target]+'!','info');
-  } else if(type==='hint'){
-    revealHint();
-  } else if(type==='shuffle'){
-    // send shuffle command — target is next player
-    const target=(myIdx+1)%gs.numPlayers;
-    send({type:'powerup',action:'shuffle_opp',target});
-    toast('🔀 Shuffled '+gs.players[target]+"'s cards!",'info');
-  }
+  if(powerups[type]<=0) return; powerups[type]--;
+  if(type==='freeze'){const t=(myIdx+1)%gs.numPlayers;send({type:'powerup',action:'freeze',target:t});toast('❄️ Froze '+gs.players[t]+'!','info');}
+  else if(type==='hint'){revealHint();}
+  else if(type==='shuffle'){const t=(myIdx+1)%gs.numPlayers;send({type:'powerup',action:'shuffle_opp',target:t});toast('🔀 Shuffled '+gs.players[t]+"'s cards!",'info');}
   renderPowerups();
 }
-
 function revealHint(){
-  const unmatched=gs.leftCards.filter(c=>!gs.matched.includes(c.id));
-  if(!unmatched.length) return;
-  const t=unmatched[Math.floor(Math.random()*unmatched.length)];
-  const el=$('rc_'+t.id); if(!el) return;
-  el.classList.add('hint-reveal');
-  const cw=el.querySelector('.cw'); if(cw) cw.style.filter='none';
+  const unmatched=gs.leftCards.filter(c=>!gs.matched.includes(c.id)); if(!unmatched.length) return;
+  const t=unmatched[Math.floor(Math.random()*unmatched.length)]; const el=$('rc_'+t.id); if(!el) return;
+  el.classList.add('hint-reveal'); const cw=el.querySelector('.cw'); if(cw) cw.style.filter='none';
   toast('💡 Hint revealed!','info');
   setTimeout(()=>{el.classList.remove('hint-reveal');if(gs.diff==='expert'){if(cw)cw.style.filter='blur(7px)';}},4000);
 }
 
-// ═══════════════ RESULT ═══════════════
+// ─── result (match game) ───
 function showResult(){
   clearAllTimers();
   const secs=gs.finishedAt?Math.floor((gs.finishedAt-gs.startedAt)/1000):0;
-  const np=gs.numPlayers;
-  // find winner (highest score)
-  let maxSc=-1, winnerIdx=0;
+  const np=gs.numPlayers; let maxSc=-1, winnerIdx=0;
   for(let i=0;i<np;i++){if((gs.scores[i]||0)>maxSc){maxSc=gs.scores[i]||0;winnerIdx=i;}}
-  const iWin=winnerIdx===myIdx;
-  const myScore=gs.scores[myIdx]||0;
-  const isTie=Object.values(gs.scores).filter(s=>s===maxSc).length>1;
+  const iWin=winnerIdx===myIdx, isTie=Object.values(gs.scores).filter(s=>s===maxSc).length>1;
   $('rTrophy').textContent=isTie?'🤝':iWin?'🏆':'😅';
   $('rTitle').textContent=isTie?"It's a tie!":iWin?'You won!':'You lost!';
   $('rSub').textContent=(isTie?'Even match! ':iWin?'Great vocab skills! ':'Better luck next time! ')+'Finished in '+secs+'s.';
-  // scores sorted by score desc
   const sorted=[...Array(np).keys()].sort((a,b)=>(gs.scores[b]||0)-(gs.scores[a]||0));
-  $('rScores').innerHTML=sorted.map(i=>{
-    const isW=!isTie&&i===winnerIdx;
-    return `<div class="rsc ${isW?'win':''}">${isW?'<div class="crown">👑</div>':''}
-      <div class="rn" style="color:${P_COLORS[i]}">${gs.players[i]||'P'+(i+1)}</div>
-      <div class="rv" style="color:${isW?'var(--yl)':P_COLORS[i]}">${gs.scores[i]||0}</div></div>`;
-  }).join('');
-  $('rStats').innerHTML=`
-    <div class="res-stat"><strong>${secs}s</strong>duration</div>
-    <div class="res-stat"><strong>${gs.matched.length}/${gs.leftCards.length}</strong>matched</div>
-    <div class="res-stat"><strong>${myScore}</strong>your score</div>`;
-  go('sResult');
-  if(iWin&&!isTie) launchConfetti();
+  $('rScores').innerHTML=sorted.map(i=>{const isW=!isTie&&i===winnerIdx;return `<div class="rsc ${isW?'win':''}">${isW?'<div class="crown">👑</div>':''}<div class="rn" style="color:${P_COLORS[i]}">${gs.players[i]||'P'+(i+1)}</div><div class="rv" style="color:${isW?'var(--yl)':P_COLORS[i]}">${gs.scores[i]||0}</div></div>`;}).join('');
+  $('rStats').innerHTML=`<div class="res-stat"><strong>${secs}s</strong>duration</div><div class="res-stat"><strong>${gs.matched.length}/${gs.leftCards.length}</strong>matched</div><div class="res-stat"><strong>${gs.scores[myIdx]||0}</strong>your score</div>`;
+  go('sResult'); if(iWin&&!isTie) launchConfetti();
 }
 
-// ═══════════════ CONFETTI ═══════════════
+// ─── confetti ───
 function launchConfetti(){
   const canvas=$('confetti'); canvas.style.display='block';
-  const ctx=canvas.getContext('2d');
-  canvas.width=innerWidth; canvas.height=innerHeight;
+  const ctx=canvas.getContext('2d'); canvas.width=innerWidth; canvas.height=innerHeight;
   const cols=['#6c63ff','#ff5fa0','#3fffa8','#ffd166','#ff9f43','#fff'];
   const pts=Array.from({length:120},()=>({x:Math.random()*canvas.width,y:-10,w:Math.random()*8+4,h:Math.random()*14+6,c:cols[Math.floor(Math.random()*cols.length)],r:Math.random()*360,rv:(Math.random()-.5)*8,vx:(Math.random()-.5)*4,vy:Math.random()*4+2,a:1}));
   let f=0;
-  const anim=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.a-=.008;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.globalAlpha=Math.max(0,p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});f++;if(f<180)requestAnimationFrame(anim);else{canvas.style.display='none';}};
+  const anim=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);pts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.r+=p.rv;p.a-=.008;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r*Math.PI/180);ctx.globalAlpha=Math.max(0,p.a);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();});f++;if(f<180)requestAnimationFrame(anim);else canvas.style.display='none';};
   requestAnimationFrame(anim);
 }
 
-// ═══════════════ REMATCH / LEAVE ═══════════════
+// ─── rematch / leave ───
 function requestRematch(){
   if(myRole!=='host'){toast('Waiting for host to restart…');return;}
-  const np=numP(); const pairs=pickPairs(chosenPairs||6);
+  const n=chosenPairs||6, pairs=pickPairs(n), np=numP();
   const scores={}, lives={};
   for(let i=0;i<np;i++){scores[i]=0;lives[i]=3;}
-  gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,maxPlayers};
-  gs.myTimeLeft = gs.mode==='blitz' ? 60000 : null;
+  gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc}))),matched:[],scores,lives,turn:0,numPlayers:np,players:{...players},status:'playing',startedAt:Date.now(),finishedAt:null,mode:chosenMode,diff:chosenDiff,maxPlayers};
+  gs.myTimeLeft=gs.mode==='blitz'?60000:null;
   send({type:'rematch',state:gs});
-  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0;
+  myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set();
   startRender(); go('sGame');
 }
-
 function leaveRoom(){
   clearAllTimers();
-  // Notify others before disconnecting
-  if(ablyChannel&&gs&&gs.status==='playing'){
-    send({type:'player_left', idx:myIdx, name:myName, numPlayers:gs.numPlayers});
-  }
+  if(ablyChannel&&gs&&gs.status==='playing') send({type:'player_left',idx:myIdx,name:myName,numPlayers:gs.numPlayers||(qState?.numPlayers||2)});
   if(ablyChannel){try{ablyChannel.unsubscribe();}catch(e){}}
   if(ablyClient){try{ablyClient.close();}catch(e){}}
   ablyClient=null; ablyChannel=null;
-  players={}; gs=null; selL=null; selR=null; myRole=''; roomCode='';
+  players={}; gs=null; qState=null; selL=null; selR=null; myRole=''; roomCode='';
   hideBadge(); go('sHome');
 }
 
-// ═══════════════ KEYBOARD ═══════════════
+// ─── keyboard ───
 $('cName').addEventListener('keydown',e=>{if(e.key==='Enter')createRoom();});
 $('jCode').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom();});
 $('jName').addEventListener('keydown',e=>{if(e.key==='Enter')$('jCode').focus();});
