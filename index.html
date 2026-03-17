@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Double Meaning Match</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -34,7 +34,7 @@ h1 em{font-style:normal;background:linear-gradient(130deg,var(--acl),var(--pk));
 .hero-sub{font-size:.9rem;color:var(--m);text-align:center;max-width:360px;line-height:1.65;margin-bottom:2.2rem}
 .btn-row{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
 
-.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;padding:10px 24px;border-radius:var(--r);border:none;cursor:pointer;transition:all .15s;letter-spacing:-.01em;white-space:nowrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;padding:10px 24px;border-radius:var(--r);border:none;cursor:pointer;transition:all .15s;letter-spacing:-.01em;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .bp{background:var(--ac);color:#fff}.bp:hover{background:var(--acl);transform:translateY(-1px)}
 .bs{background:var(--s2);color:var(--text);border:1px solid var(--b2)}.bs:hover{border-color:var(--ac)}
 .bg{background:transparent;color:var(--m2);border:1px solid var(--b1)}.bg:hover{color:var(--text);border-color:var(--b2)}
@@ -108,7 +108,7 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 .turn-timer-fill{height:100%;background:var(--ac);border-radius:2px;transition:width .1s linear;width:100%}
 .turn-timer-fill.warn{background:var(--or)}.turn-timer-fill.danger{background:var(--rd)}
 
-.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:border-color .14s,transform .14s,opacity .2s;position:relative;min-height:68px;display:flex;flex-direction:column;justify-content:center}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:border-color .14s,transform .14s,opacity .2s;position:relative;min-height:68px;display:flex;flex-direction:column;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .card:hover:not(.dis):not(.matched){border-color:var(--b2);transform:translateY(-1px)}
 .card.sel{border-color:var(--ac);background:rgba(108,99,255,.07)}
 .card.selr{border-color:var(--pk);background:rgba(255,95,160,.07)}
@@ -224,13 +224,129 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 .sort-placed .rm{font-size:11px;color:var(--m)}
 .sort-hint{font-size:11px;color:var(--m);text-align:center;margin-bottom:.8rem;min-height:18px}
 
+/* ══════════════════════════════════════
+   MOBILE — 580px and below
+══════════════════════════════════════ */
 @media(max-width:580px){
-  header{padding:.9rem 1rem}.screen{padding:1rem}
-  .board{grid-template-columns:1fr 24px 1fr}
-  .card{padding:8px 9px;min-height:60px}.cw{font-size:.76rem}
-  .conn{height:60px}h1{font-size:1.8rem}.panel{padding:1.2rem}
-  .setup-grid{grid-template-columns:1fr}.sbar{flex-direction:column;gap:6px}
-  .sort-zones{grid-template-columns:1fr}
+
+  /* ── Header ── */
+  header{padding:.75rem 1rem;gap:6px}
+  .logo{font-size:.82rem;gap:7px}
+  .logo-dot{width:22px;height:22px;font-size:11px;border-radius:6px}
+  /* Hide founder name in header on very small screens — shown on home */
+  header .founder-hdr{display:none}
+  #roomBadge{font-size:10px;padding:2px 8px}
+
+  /* ── Screens ── */
+  .screen{padding:.9rem .85rem;justify-content:flex-start;padding-top:1.4rem}
+
+  /* ── Home ── */
+  h1{font-size:1.75rem;margin-bottom:.6rem}
+  .hero-sub{font-size:.83rem;margin-bottom:1.6rem}
+  .tag{font-size:9px;padding:3px 10px;margin-bottom:1.1rem}
+
+  /* ── Panel / Create / Join ── */
+  .panel{padding:1.1rem;border-radius:14px}
+  .ptitle{font-size:1rem;margin-bottom:1rem}
+  .lbl{font-size:9px;margin-bottom:4px}
+  input[type=text]{font-size:.88rem;padding:9px 12px;margin-bottom:.75rem}
+  .setup-grid{grid-template-columns:1fr 1fr;gap:6px;margin-bottom:.75rem}
+  .opt-card{padding:8px 10px}
+  .opt-title{font-size:.78rem}
+  .opt-sub{font-size:9px}
+
+  /* ── Lobby slots ── */
+  .slot{padding:8px 11px}
+  .sn{font-size:.8rem}
+  .ss{font-size:9px}
+
+  /* ── Game wrapper ── */
+  .gwrap{padding:0 0 1.5rem}
+  .gtop{padding-bottom:.6rem;gap:6px}
+  .stats{gap:5px}
+  .pill{padding:3px 9px;font-size:11px;gap:4px}
+  .pv{font-size:.78rem}
+
+  /* ── Score bar ── */
+  .sbar{flex-direction:row;gap:5px;margin-bottom:.7rem;flex-wrap:nowrap}
+  .sc{padding:8px 10px;gap:6px;min-width:0;flex:1}
+  .scname{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px}
+  .scnum{font-size:1.2rem}
+  .streak-badge{font-size:9px;padding:1px 5px}
+  .ttag{font-size:8px;padding:1px 5px}
+
+  /* ── Board ── */
+  .board{grid-template-columns:1fr 20px 1fr;gap:0}
+  .colh{font-size:9px;padding:0 0 6px 2px}
+  .colhr{padding-right:2px}
+
+  /* ── Cards ── */
+  .card{padding:7px 8px;min-height:52px;border-radius:9px}
+  .cw{font-size:.72rem;line-height:1.3}
+  .badge{font-size:8px;padding:1px 5px;margin-top:3px}
+  .chk{font-size:11px;top:5px;right:6px}
+  .cards{gap:5px}
+
+  /* ── Connector ── */
+  .conn{height:52px;width:2px}
+  .midcol{gap:5px}
+
+  /* ── Powerup bar ── */
+  .powerup-bar{gap:5px;margin-bottom:.6rem;flex-wrap:wrap}
+  .pup{padding:5px 9px;font-size:11px;gap:4px;border-radius:9px}
+  .pup-icon{font-size:13px}
+  .pup-label{font-size:10px}
+  .pup-count{font-size:9px;padding:1px 5px}
+
+  /* ── Status bar ── */
+  .statusbar{font-size:11px;padding:.2rem 0 .5rem}
+
+  /* ── Blitz ring ── */
+  .blitz-ring{width:38px;height:38px}
+  .blitz-ring svg{width:38px;height:38px}
+  .ring-text{font-size:10px}
+
+  /* ── Sort zones ── */
+  .sort-zones{grid-template-columns:1fr;gap:8px}
+  .sort-zone{min-height:70px;padding:10px}
+  .sort-zone-title{font-size:9px;margin-bottom:7px}
+  .sort-word{padding:6px 11px;font-size:.82rem}
+  .sort-placed{padding:5px 9px;font-size:.78rem}
+  .word-bank{gap:6px}
+  .sorter-wrap{padding:.6rem 0}
+
+  /* ── Result ── */
+  .reswrap{padding:0 .5rem}
+  .trophy{font-size:44px;margin-bottom:.6rem}
+  .restitle{font-size:1.5rem}
+  .ressub{font-size:.82rem;margin-bottom:1.3rem}
+  .resscores{gap:7px}
+  .rsc{padding:.8rem 1.1rem;min-width:85px}
+  .rv{font-size:1.7rem}
+  .res-stats{gap:6px;margin-bottom:1.2rem}
+  .res-stat{padding:.6rem .9rem;font-size:10px}
+  .res-stat strong{font-size:.95rem}
+
+  /* ── Buttons ── */
+  .btn{font-size:.83rem;padding:9px 18px}
+  .btn-row{gap:7px}
+
+  /* ── Toast ── */
+  .toast{font-size:11px;padding:7px 13px;bottom:1rem;max-width:90vw;white-space:normal;text-align:center}
+
+  /* ── Quiz screens ── */
+  #leftCol>div{padding:.6rem 0}
+}
+
+/* ── Extra small (iPhone SE, 375px) ── */
+@media(max-width:390px){
+  .board{grid-template-columns:1fr 16px 1fr}
+  .cw{font-size:.67rem}
+  .scname{max-width:50px}
+  .sbar{gap:4px}
+  .sc{padding:7px 8px}
+  h1{font-size:1.55rem}
+  .setup-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -239,7 +355,13 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 <div id="app">
   <header>
     <div class="logo"><div class="logo-dot">⚡</div> Double Meaning <em>Match</em></div>
-    <div id="roomBadge"></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="roomBadge"></div>
+      <div class="founder-hdr" style="text-align:right;line-height:1.5">
+        <span style="display:block;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(238,238,245,.2)">Founded by</span>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:.82rem;letter-spacing:-.02em;background:linear-gradient(120deg,#c084fc,#f472b6,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Shakhzoda Khamraeva</span>
+      </div>
+    </div>
   </header>
 
   <!-- HOME -->
@@ -250,6 +372,14 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
     <div class="btn-row">
       <button class="btn bp" onclick="go('sCreate')">Create Room</button>
       <button class="btn bs" onclick="go('sJoin')">Join Room</button>
+    </div>
+    <div style="margin-top:3rem;display:flex;flex-direction:column;align-items:center;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;opacity:.4">
+        <div style="height:1px;width:32px;background:linear-gradient(90deg,transparent,var(--m))"></div>
+        <span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--m)">Founded by</span>
+        <div style="height:1px;width:32px;background:linear-gradient(90deg,var(--m),transparent)"></div>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.02em;background:linear-gradient(120deg,#c084fc 0%,#f472b6 50%,#fb923c 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Shakhzoda Khamraeva</div>
     </div>
   </div>
 
@@ -376,9 +506,9 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
   </div>
 
   <!-- GAME -->
-  <div class="screen" id="sGame">
+  <div class="screen" id="sGame" style="justify-content:flex-start;padding-top:0;padding-left:0;padding-right:0">
     <div id="diffStrip" class="diff-strip" style="display:none"></div>
-      <div class="gwrap">
+      <div class="gwrap" style="padding-left:max(.85rem,env(safe-area-inset-left));padding-right:max(.85rem,env(safe-area-inset-right))">
       <div class="gtop">
         <div class="stats" id="statsBar"></div>
         <button class="btn bg" style="font-size:11px;padding:5px 11px" onclick="leaveRoom()">Leave</button>
