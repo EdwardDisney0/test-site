@@ -596,6 +596,30 @@ async function initAbly(){
 function subscribeChannel(name){
   ablyChannel=ablyClient.channels.get(name);
   ablyChannel.subscribe('msg',msg=>{try{onData(JSON.parse(msg.data));}catch(e){}});
+
+  // Presence — отслеживаем выход игроков автоматически
+  // Входим в presence с нашими данными
+  ablyChannel.presence.enter({name:myName, idx:myIdx});
+
+  // Слушаем выход других
+  ablyChannel.presence.subscribe('leave', member=>{
+    const data=member.data||{};
+    const leftName=data.name||member.clientId||'Игрок';
+    const leftIdx=data.idx;
+    // Игнорируем если это мы сами или если игра не началась
+    if(leftIdx===myIdx) return;
+    const activeState=gs||qState;
+    if(!activeState) return;
+    const totalBefore=activeState.numPlayers||2;
+    onPlayerLeft(leftIdx, leftName, totalBefore);
+  });
+}
+
+// Обновляем presence data когда получаем myIdx
+function updatePresence(){
+  if(ablyChannel){
+    try{ablyChannel.presence.update({name:myName, idx:myIdx});}catch(e){}
+  }
 }
 
 // ═══════════════════════════════════════
@@ -677,7 +701,7 @@ function onData(msg){
       } else {
         for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       }
-      renderLobby(); break;
+      renderLobby(); updatePresence(); break;
     case 'room_full':
       toast('Room is full!','err'); leaveRoom(); break;
     case 'start':
@@ -686,7 +710,7 @@ function onData(msg){
       for(const[k,v] of Object.entries(players)){if(v===myName){myIdx=parseInt(k);break;}}
       gs.myTimeLeft=gs.mode==='blitz'?60000:null;
       myStreak=0; powerups={freeze:2,hint:2,shuffle:2}; frozenUntil=0; tempRevealed=new Set(); diffBannerShown=false;
-      startRender(); go('sGame'); break;
+      updatePresence(); startRender(); go('sGame'); break;
     case 'state':
       gs=msg.state;
       if(gs.status==='finished'){clearAllTimers();setTimeout(showResult,350);}
@@ -706,53 +730,9 @@ function onData(msg){
       }
       break;
     case 'player_left':{
-      const leftIdx=msg.idx, leftName=msg.name||('Player '+(leftIdx+1));
       const activeState=gs||qState;
       if(!activeState) break;
-      // totalBefore = сколько игроков было ДО выхода
-      const totalBefore=msg.totalBefore||(activeState.numPlayers||2);
-      if(totalBefore<=2){
-        // 1v1 — конец игры для оставшегося
-        clearAllTimers();
-        toast(leftName+' покинул игру','err');
-        setTimeout(()=>{
-          if(gs){
-            gs.status='finished'; gs.finishedAt=Date.now();
-            showResult();
-          } else if(qState){
-            qState.status='finished';
-            showQuizResult(qState.scores);
-          }
-        },600);
-      } else {
-        // 3+ игроков — убираем его и продолжаем
-        toast(leftName+' вышел — его ходы пропускаются','info');
-        if(gs){
-          delete gs.players[leftIdx];
-          gs.numPlayers=Object.keys(gs.players).length;
-          if(gs.turn===leftIdx){
-            let next=(gs.turn+1)%totalBefore, s=0;
-            while(!gs.players[next]&&s++<totalBefore) next=(next+1)%totalBefore;
-            gs.turn=next;
-          }
-          updateRender();
-        }
-        if(qState){
-          if(!qState.finished) qState.finished={};
-          qState.finished[leftIdx]=true;
-          delete qState.players[leftIdx];
-          qState.numPlayers=Object.keys(qState.players).length;
-          if(myRole==='host'){
-            const allDone=Object.keys(qState.players).every(k=>qState.finished[k]);
-            if(allDone){
-              clearInterval(quizGlobalI);
-              send({type:'quiz_finish',scores:qState.scores});
-              showQuizResult(qState.scores);
-            }
-          }
-          if(qState.finished&&qState.finished[myIdx]) showWaitingForOthers();
-        }
-      }
+      onPlayerLeft(msg.idx, msg.name||('Player '+(msg.idx+1)), msg.totalBefore||(activeState.numPlayers||2));
       break;
     }
     case 'rematch':
@@ -770,7 +750,7 @@ function onData(msg){
       l4SelectedWord=null; l4Placed={}; diffBannerShown=false;
       if(!qState.finished) qState.finished={};
       renderQuiz(); go('sGame');
-      startQuizGlobalTimer(); break;
+      updatePresence(); startQuizGlobalTimer(); break;
     case 'quiz_answer':
       if(msg.idx!==myIdx){
         qState.scores[msg.idx]=msg.score;
@@ -1634,21 +1614,99 @@ function requestRematch(){
   startRender(); go('sGame');
 }
 
+// ─── Центральная обработка выхода игрока ───────────────────────────
+const _leftHandled=new Set(); // дедупликация — не обрабатывать одного дважды
+function onPlayerLeft(leftIdx, leftName, totalBefore){
+  // Игнорируем если это мы, или уже обработано, или нет активной игры
+  if(leftIdx===myIdx) return;
+  const key=leftIdx+'_'+totalBefore;
+  if(_leftHandled.has(key)) return;
+  _leftHandled.add(key);
+
+  const activeState=gs||qState;
+  if(!activeState) return;
+  // Если игра уже закончена — ничего не делаем
+  if(activeState.status==='finished') return;
+
+  if(totalBefore<=2){
+    // ── 1v1: немедленно завершаем игру ──
+    clearAllTimers();
+    toast('❌ '+leftName+' покинул игру','err');
+    setTimeout(()=>{
+      if(gs){
+        gs.status='finished'; gs.finishedAt=gs.finishedAt||Date.now();
+        showResult();
+      } else if(qState){
+        qState.status='finished';
+        showQuizResult(qState.scores);
+      }
+    }, 500);
+  } else {
+    // ── 3+ игроков: убираем, продолжаем ──
+    toast('⚠️ '+leftName+' вышел из игры','info');
+    if(gs){
+      delete gs.players[leftIdx];
+      gs.numPlayers=Object.keys(gs.players).length;
+      if(gs.turn===leftIdx){
+        let next=(gs.turn+1)%totalBefore, s=0;
+        while(!gs.players[next]&&s++<totalBefore) next=(next+1)%totalBefore;
+        gs.turn=next;
+      }
+      if(gs.numPlayers<=1){
+        gs.status='finished'; gs.finishedAt=Date.now();
+        clearAllTimers(); setTimeout(showResult,500);
+      } else {
+        updateRender();
+      }
+    }
+    if(qState){
+      if(!qState.finished) qState.finished={};
+      qState.finished[leftIdx]=true;
+      delete qState.players[leftIdx];
+      qState.numPlayers=Object.keys(qState.players).length;
+      // Если осталось 1 — тоже завершаем
+      if(qState.numPlayers<=1){
+        clearAllTimers();
+        qState.status='finished';
+        setTimeout(()=>showQuizResult(qState.scores),500);
+        return;
+      }
+      if(myRole==='host'){
+        const allDone=Object.keys(qState.players).every(k=>qState.finished[k]);
+        if(allDone){
+          clearInterval(quizGlobalI);
+          send({type:'quiz_finish',scores:qState.scores});
+          showQuizResult(qState.scores);
+        }
+      }
+      if(qState.finished[myIdx]) showWaitingForOthers();
+    }
+  }
+}
+
 function leaveRoom(){
   clearAllTimers();
   const curState=gs||qState;
   if(ablyChannel&&curState&&curState.status==='playing'){
-    // If in quiz and not yet finished, submit score before leaving
+    // Отправляем quiz_done если в quiz
     if(qState&&(!qState.finished||!qState.finished[myIdx])){
       send({type:'quiz_done',idx:myIdx,score:qState.scores[myIdx]||0});
     }
+    // Отправляем player_left как резервный канал (presence — основной)
     send({type:'player_left',idx:myIdx,name:myName,totalBefore:curState.numPlayers||2});
   }
-  if(ablyChannel){try{ablyChannel.unsubscribe();}catch(e){}}
-  if(ablyClient){try{ablyClient.close();}catch(e){}}
+  // Выходим из presence перед закрытием (это тригернёт 'leave' у других)
+  if(ablyChannel){
+    try{ablyChannel.presence.leave();}catch(e){}
+    // Небольшая задержка чтобы presence успел уйти до закрытия соединения
+    setTimeout(()=>{
+      try{ablyChannel.unsubscribe();}catch(e){}
+      try{ablyClient.close();}catch(e){}
+    }, 300);
+  }
   ablyClient=null; ablyChannel=null;
   players={}; gs=null; qState=null; selL=null; selR=null; myRole=''; roomCode='';
-  l4SelectedWord=null; l4Placed={};
+  l4SelectedWord=null; l4Placed={}; _leftHandled.clear();
   hideBadge(); go('sHome');
 }
 
