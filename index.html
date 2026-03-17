@@ -361,30 +361,94 @@ input[type=text]::placeholder{color:rgba(238,238,245,.18)}
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════
 //  WORD DATA
 // ═══════════════════════════════════════════════════════
 const PAIRS = [
-  {id:'chicken',  word:'a chicken',     unc:'chicken — meat / poultry (food)',       ru:'🐔 курица (животное) / 🍗 курятина'},
-  {id:'paper',    word:'a paper',       unc:'paper — the writing material',           ru:'📰 статья / газета / 📄 бумага (материал)'},
-  {id:'glass',    word:'a glass',       unc:'glass — the transparent material',       ru:'🥤 стакан / 🪟 стекло (материал)'},
-  {id:'work',     word:'a work',        unc:'work — effort / labour in general',      ru:'🎨 произведение / 💼 работа (в целом)'},
-  {id:'light',    word:'a light',       unc:'light — illumination / brightness',      ru:'💡 лампа / ☀️ свет (вещество)'},
-  {id:'experience',word:'an experience',unc:'experience — knowledge over time',       ru:'🌟 событие / 🧠 опыт (в целом)'},
-  {id:'iron',     word:'an iron',       unc:'iron — the metal element',               ru:'👔 утюг / ⚙️ железо (металл)'},
-  {id:'room',     word:'a room',        unc:'room — available space',                 ru:'🚪 комната / 📦 место (пространство)'},
-  {id:'wood',     word:'a wood',        unc:'wood — timber / the material',           ru:'🌲 лес / 🪵 древесина (материал)'},
-  {id:'time',     word:'a time',        unc:'time — the general concept of duration', ru:'🎉 раз / момент / ⏰ время (в целом)'},
-  {id:'stone',    word:'a stone',       unc:'stone — the rock material',              ru:'💎 камень (один) / 🏔️ камень (материал)'},
-  {id:'hair',     word:'a hair',        unc:'hair — all the hair on your head',       ru:'💈 волосок (один) / 💇 волосы (в целом)'},
+  // ── FOOD & NATURE ──
+  {id:'chicken',   word:'a chicken',      unc:'chicken — meat / poultry (food)',            ru:'🐔 курица (животное) / 🍗 курятина'},
+  {id:'fish',      word:'a fish',         unc:'fish — seafood in general',                  ru:'🐟 рыба (одна) / 🍣 рыба (еда)'},
+  {id:'lamb',      word:'a lamb',         unc:'lamb — meat from a young sheep',             ru:'🐑 ягнёнок / 🥩 баранина'},
+  {id:'turkey',    word:'a turkey',       unc:'turkey — the meat of a turkey',              ru:'🦃 индейка (птица) / 🍖 индейка (мясо)'},
+  {id:'coffee',    word:'a coffee',       unc:'coffee — the drink in general',              ru:'☕ чашка кофе / ☕ кофе (вещество)'},
+  {id:'tea',       word:'a tea',          unc:'tea — the drink in general',                 ru:'🍵 чашка чая / 🍃 чай (в целом)'},
+  {id:'beer',      word:'a beer',         unc:'beer — alcohol in general',                  ru:'🍺 кружка пива / 🍻 пиво (напиток)'},
+  {id:'wine',      word:'a wine',         unc:'wine — alcohol in general',                  ru:'🍷 бокал вина / 🍾 вино (напиток)'},
+  {id:'cake',      word:'a cake',         unc:'cake — baked goods in general',              ru:'🎂 торт (один) / 🍰 торт (выпечка)'},
+  {id:'chocolate', word:'a chocolate',    unc:'chocolate — the sweet material',             ru:'🍫 конфета / 🍫 шоколад (вещество)'},
+  {id:'wood',      word:'a wood',         unc:'wood — timber / the material',               ru:'🌲 лес / 🪵 древесина (материал)'},
+  {id:'stone',     word:'a stone',        unc:'stone — the rock material',                  ru:'💎 камень (один) / 🏔️ камень (материал)'},
+  {id:'iron',      word:'an iron',        unc:'iron — the metal element',                   ru:'👔 утюг / ⚙️ железо (металл)'},
+  // ── HOUSEHOLD & OBJECTS ──
+  {id:'glass',     word:'a glass',        unc:'glass — the transparent material',           ru:'🥤 стакан / 🪟 стекло (материал)'},
+  {id:'paper',     word:'a paper',        unc:'paper — the writing material',               ru:'📰 статья / газета / 📄 бумага (материал)'},
+  {id:'fire',      word:'a fire',         unc:'fire — flames in general',                   ru:'🔥 костёр / пожар / 🔥 огонь (стихия)'},
+  {id:'light',     word:'a light',        unc:'light — illumination / brightness',          ru:'💡 лампа / ☀️ свет (вещество)'},
+  {id:'noise',     word:'a noise',        unc:'noise — sound / background sound',           ru:'📢 шум (конкретный) / 🔊 шум (в целом)'},
+  {id:'sound',     word:'a sound',        unc:'sound — audio in general',                   ru:'🎵 звук (один) / 🔈 звук (в целом)'},
+  {id:'paint',     word:'a paint',        unc:'paint — the liquid coating material',        ru:'🖼️ краска (оттенок) / 🪣 краска (материал)'},
+  {id:'cloth',     word:'a cloth',        unc:'cloth — fabric / textile material',          ru:'🧣 тряпка / 🧵 ткань (материал)'},
+  {id:'tin',       word:'a tin',          unc:'tin — the metal material',                   ru:'🥫 банка (жестяная) / ⚙️ олово (металл)'},
+  {id:'copper',    word:'a copper',       unc:'copper — the metal element',                 ru:'🪙 монета / медяк / 🔧 медь (металл)'},
+  // ── ABSTRACT ──
+  {id:'work',      word:'a work',         unc:'work — effort / labour in general',          ru:'🎨 произведение / 💼 работа (в целом)'},
+  {id:'experience',word:'an experience',  unc:'experience — knowledge over time',           ru:'🌟 событие / 🧠 опыт (в целом)'},
+  {id:'time',      word:'a time',         unc:'time — the general concept of duration',     ru:'🎉 раз / момент / ⏰ время (в целом)'},
+  {id:'room',      word:'a room',         unc:'room — available space',                     ru:'🚪 комната / 📦 место (пространство)'},
+  {id:'life',      word:'a life',         unc:'life — the concept of being alive',          ru:'🌱 жизнь (одна) / ✨ жизнь (понятие)'},
+  {id:'love',      word:'a love',         unc:'love — the feeling in general',              ru:'💌 любовь (человек) / ❤️ любовь (чувство)'},
+  {id:'fear',      word:'a fear',         unc:'fear — the emotion in general',              ru:'😨 страх (конкретный) / 😰 страх (чувство)'},
+  {id:'hope',      word:'a hope',         unc:'hope — optimism in general',                 ru:'🌈 надежда (одна) / 🙏 надежда (в целом)'},
+  {id:'dream',     word:'a dream',        unc:'dream — the concept of dreaming',            ru:'💭 сон / мечта / ✨ сон (явление)'},
+  {id:'thought',   word:'a thought',      unc:'thought — the process of thinking',          ru:'💡 мысль (одна) / 🧠 мышление (процесс)'},
+  {id:'knowledge', word:'a knowledge',    unc:'knowledge — information in general',         ru:'📚 знание (область) / 🎓 знания (в целом)'},
+  {id:'beauty',    word:'a beauty',       unc:'beauty — attractiveness in general',         ru:'💄 красавица / 🌸 красота (понятие)'},
+  {id:'success',   word:'a success',      unc:'success — achievement in general',           ru:'🏆 успех (один) / 🌟 успех (понятие)'},
+  {id:'failure',   word:'a failure',      unc:'failure — lack of success in general',       ru:'❌ провал (один) / 😔 неудача (в целом)'},
+  {id:'pleasure',  word:'a pleasure',     unc:'pleasure — enjoyment in general',            ru:'😊 удовольствие / 🎉 удовольствие (чувство)'},
+  {id:'surprise',  word:'a surprise',     unc:'surprise — the feeling of being surprised',  ru:'🎁 сюрприз / 😮 удивление (чувство)'},
+  // ── NATURE & ELEMENTS ──
+  {id:'hair',      word:'a hair',         unc:'hair — all the hair on your head',           ru:'💈 волосок (один) / 💇 волосы (в целом)'},
+  {id:'sand',      word:'a sand',         unc:'sand — granular material on beaches',        ru:'🏖️ пляж (тип) / 🌊 песок (материал)'},
+  {id:'water',     word:'a water',        unc:'water — the liquid H₂O',                     ru:'💧 вода (порция) / 🌊 вода (вещество)'},
+  {id:'snow',      word:'a snow',         unc:'snow — frozen precipitation in general',     ru:'❄️ снегопад (один) / ⛄ снег (вещество)'},
+  {id:'rain',      word:'a rain',         unc:'rain — precipitation in general',            ru:'🌧️ ливень (один) / 🌂 дождь (явление)'},
+  {id:'wind',      word:'a wind',         unc:'wind — moving air in general',               ru:'💨 порыв ветра / 🌬️ ветер (явление)'},
+  {id:'cloud',     word:'a cloud',        unc:'cloud — water vapour in the sky',            ru:'☁️ облако (одно) / 🌥️ облачность (в целом)'},
+  {id:'fog',       word:'a fog',          unc:'fog — thick mist in general',                ru:'🌫️ туман (конкретный) / 🌁 туман (явление)'},
+  {id:'storm',     word:'a storm',        unc:'storm — bad weather in general',             ru:'⛈️ буря (одна) / 🌪️ шторм (явление)'},
+  {id:'wave',      word:'a wave',         unc:'wave — the physics of waves',                ru:'🌊 волна (одна) / 📡 волны (физика)'},
+  // ── PEOPLE & SOCIETY ──
+  {id:'language',  word:'a language',     unc:'language — communication in general',        ru:'🗣️ язык (один) / 📖 язык (в целом)'},
+  {id:'culture',   word:'a culture',      unc:'culture — civilisation in general',          ru:'🎭 культура (одна) / 🌍 культура (понятие)'},
+  {id:'history',   word:'a history',      unc:'history — the study of past events',         ru:'📜 история (одна) / 🏛️ история (наука)'},
+  {id:'art',       word:'an art',         unc:'art — creative expression in general',       ru:'🖼️ искусство (вид) / 🎨 искусство (в целом)'},
+  {id:'sport',     word:'a sport',        unc:'sport — physical activity in general',       ru:'⚽ вид спорта / 🏃 спорт (в целом)'},
+  {id:'business',  word:'a business',     unc:'business — commerce in general',             ru:'🏪 бизнес (компания) / 💼 бизнес (в целом)'},
+  {id:'crime',     word:'a crime',        unc:'crime — illegal activity in general',        ru:'🔪 преступление (одно) / ⚖️ преступность (в целом)'},
+  {id:'medicine',  word:'a medicine',     unc:'medicine — the science of health',           ru:'💊 лекарство (одно) / 🏥 медицина (наука)'},
+  {id:'technology',word:'a technology',   unc:'technology — tech in general',               ru:'💻 технология (одна) / 🔬 технологии (в целом)'},
+  {id:'science',   word:'a science',      unc:'science — knowledge through experiment',     ru:'🔭 наука (одна) / 🧪 наука (в целом)'},
+  // ── ACTIONS AS NOUNS ──
+  {id:'laugh',     word:'a laugh',        unc:'laugh — laughter in general',                ru:'😂 смех (один раз) / 🤣 смех (явление)'},
+  {id:'cry',       word:'a cry',          unc:'cry — crying / weeping in general',          ru:'😢 плач (один) / 😭 плач (в целом)'},
+  {id:'talk',      word:'a talk',         unc:'talk — conversation in general',             ru:'🗣️ беседа (одна) / 💬 разговор (в целом)'},
+  {id:'run',       word:'a run',          unc:'run — running in general',                   ru:'🏃 пробежка (одна) / 🏅 бег (в целом)'},
+  {id:'swim',      word:'a swim',         unc:'swim — swimming in general',                 ru:'🏊 заплыв (один) / 💦 плавание (в целом)'},
+  {id:'look',      word:'a look',         unc:'look — appearance in general',               ru:'👀 взгляд (один) / 👁️ вид / внешность'},
+  {id:'read',      word:'a read',         unc:'read — reading in general',                  ru:'📖 чтение (сеанс) / 📚 чтение (в целом)'},
+  {id:'walk',      word:'a walk',         unc:'walk — walking in general',                  ru:'🚶 прогулка (одна) / 👟 ходьба (в целом)'},
 ];
+
+// Pick random N pairs from the full bank each game
+function pickPairs(n=6){ return shuffle(PAIRS).slice(0,n); }
 
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
-let peer, conn, myRole=null, myName='', oppName='', roomCode='';
+let peer=null, conn=null, myRole=null, myName='', oppName='', roomCode='';
 let gs=null, selL=null, selR=null, connected=false;
 let timerI=null, turnTimerI=null, blitzI=null, shuffleI=null;
 let myStreak=0, oppStreak=0;
@@ -400,7 +464,6 @@ const go = id => { document.querySelectorAll('.screen').forEach(s=>s.classList.r
 const $ = id => document.getElementById(id);
 function toast(msg,type=''){const t=$('toast');t.textContent=msg;t.className='toast show'+(type?' '+type:'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2600)}
 const shuffle = a => [...a].sort(()=>Math.random()-.5);
-const send = d => { if(conn&&conn.open) conn.send(d); };
 const showBadge = t => { $('roomBadge').textContent=t; $('roomBadge').style.display=''; };
 const hideBadge = () => $('roomBadge').style.display='none';
 
@@ -408,44 +471,74 @@ function pickMode(el){ document.querySelectorAll('#modeGrid .opt-card').forEach(
 function pickDiff(el){ document.querySelectorAll('#diffGrid .opt-card').forEach(c=>c.classList.remove('chosen')); el.classList.add('chosen'); chosenDiff=el.dataset.diff; }
 
 // ═══════════════════════════════════════════════════════
-//  PEER
+//  ABLY — works across any network / mobile / different ISPs
 // ═══════════════════════════════════════════════════════
-function initPeer(id){ return new Promise((res,rej)=>{ const p=new Peer(id,{debug:0}); p.on('open',()=>res(p)); p.on('error',e=>rej(e)); setTimeout(()=>rej(new Error('timeout')),9000); }); }
+const ABLY_KEY = 'w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
+let ablyClient = null;
+let ablyChannel = null;
 
-async function createRoom(){
-  const name=$('cName').value.trim();
-  if(!name){toast('Enter your name','err');return}
-  myName=name; myRole='host';
-  const btn=$('createBtn'); btn.disabled=true; btn.textContent='Connecting…';
-  const errEl=$('createErr'); errEl.style.display='none';
-  const code=String(Math.floor(1000+Math.random()*9000)); roomCode=code;
-  try{ peer=await initPeer('dmm-'+code+'-host'); }
-  catch(e){ btn.disabled=false; btn.textContent='Create Room'; errEl.textContent='Connection failed. Try again.'; errEl.style.display=''; return; }
-  btn.disabled=false; btn.textContent='Create Room';
-  showBadge('Room '+code); go('sLobby'); renderLobby(false);
-  peer.on('connection', c=>{
-    conn=c;
-    c.on('open',()=>{ connected=true; c.send({type:'hello',name:myName}); });
-    c.on('data',onData);
-    c.on('close',()=>{ connected=false; toast('Friend disconnected','err'); });
+function send(data){
+  if(ablyChannel) ablyChannel.publish('msg', JSON.stringify(data));
+}
+
+async function initAbly(){
+  if(ablyClient) { try{ ablyClient.close(); }catch(e){} }
+  ablyClient = new Ably.Realtime({ key: ABLY_KEY, echoMessages: false });
+  return new Promise((res, rej) => {
+    ablyClient.connection.on('connected', () => res());
+    ablyClient.connection.on('failed',    () => rej(new Error('ably-failed')));
+    setTimeout(() => rej(new Error('timeout')), 10000);
   });
 }
 
+function subscribeChannel(channelName){
+  ablyChannel = ablyClient.channels.get(channelName);
+  ablyChannel.subscribe('msg', msg => {
+    try{ onData(JSON.parse(msg.data)); } catch(e){}
+  });
+}
+
+async function createRoom(){
+  const name = $('cName').value.trim();
+  if(!name){ toast('Enter your name','err'); return; }
+  myName = name; myRole = 'host';
+  const btn = $('createBtn'); btn.disabled = true; btn.textContent = 'Connecting…';
+  const errEl = $('createErr'); errEl.style.display = 'none';
+  const code = String(Math.floor(1000 + Math.random()*9000));
+  roomCode = code;
+  try {
+    await initAbly();
+    subscribeChannel('dmm-room-' + code);
+    connected = true;
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Create Room';
+    errEl.textContent = 'Connection failed. Check your internet.'; errEl.style.display = ''; return;
+  }
+  btn.disabled = false; btn.textContent = 'Create Room';
+  showBadge('Room ' + code);
+  go('sLobby'); renderLobby(false);
+}
+
 async function joinRoom(){
-  const name=$('jName').value.trim(), code=$('jCode').value.trim();
-  const errEl=$('joinErr'); errEl.style.display='none';
-  if(!name){toast('Enter your name','err');return}
-  if(!code||code.length<4){toast('Enter 4-digit code','err');return}
-  myName=name; myRole='guest'; roomCode=code;
-  const btn=$('joinBtn'); btn.disabled=true; btn.textContent='Connecting…';
-  try{ peer=await initPeer('dmm-'+Math.random().toString(36).slice(2,8)+'-guest'); }
-  catch(e){ btn.disabled=false; btn.textContent='Join'; errEl.textContent='Peer server error.'; errEl.style.display=''; return; }
-  conn=peer.connect('dmm-'+code+'-host',{reliable:true});
-  const tmo=setTimeout(()=>{ if(!connected){ btn.disabled=false; btn.textContent='Join'; errEl.textContent='Room not found. Check the code.'; errEl.style.display=''; }},7000);
-  conn.on('open',()=>{ clearTimeout(tmo); connected=true; conn.send({type:'hello',name:myName}); btn.disabled=false; btn.textContent='Join'; showBadge('Room '+code); go('sLobby'); renderLobby(true); });
-  conn.on('data',onData);
-  conn.on('close',()=>{ connected=false; toast('Host disconnected','err'); });
-  conn.on('error',()=>{ clearTimeout(tmo); btn.disabled=false; btn.textContent='Join'; errEl.textContent='Could not connect. Check the code.'; errEl.style.display=''; });
+  const name = $('jName').value.trim(), code = $('jCode').value.trim();
+  const errEl = $('joinErr'); errEl.style.display = 'none';
+  if(!name){ toast('Enter your name','err'); return; }
+  if(!code || code.length < 4){ toast('Enter 4-digit code','err'); return; }
+  myName = name; myRole = 'guest'; roomCode = code;
+  const btn = $('joinBtn'); btn.disabled = true; btn.textContent = 'Connecting…';
+  try {
+    await initAbly();
+    subscribeChannel('dmm-room-' + code);
+    connected = true;
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Join';
+    errEl.textContent = 'Connection failed. Check your internet.'; errEl.style.display = ''; return;
+  }
+  btn.disabled = false; btn.textContent = 'Join';
+  showBadge('Room ' + code);
+  go('sLobby'); renderLobby(false);
+  // Guest announces themselves
+  send({ type: 'hello', name: myName });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -472,7 +565,18 @@ function renderLobby(guestJoined){
 // ═══════════════════════════════════════════════════════
 function onData(msg){
   switch(msg.type){
-    case 'hello': oppName=msg.name; renderLobby(true); break;
+    case 'hello':
+      if(myRole==='host'){
+        oppName=msg.name; renderLobby(true);
+        // send back our name so guest knows we exist
+        send({type:'hello_ack', name:myName});
+      }
+      break;
+    case 'hello_ack':
+      if(myRole==='guest'){
+        oppName=msg.name; renderLobby(true);
+      }
+      break;
     case 'start': gs=msg.state; myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0; startRender(); go('sGame'); break;
     case 'state': gs=msg.state; oppStreak=msg.oppStreak||0; updateRender(); if(gs.status==='finished') setTimeout(showResult,350); break;
     case 'powerup': handleOppPowerup(msg); break;
@@ -492,7 +596,7 @@ function handleOppPowerup(msg){
 //  GAME START
 // ═══════════════════════════════════════════════════════
 function startGame(){
-  const pairs=shuffle(PAIRS).slice(0,6);
+  const pairs=pickPairs();
   gs={
     leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),
     rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc,ru:p.ru}))),
@@ -900,7 +1004,7 @@ function launchConfetti(){
 // ═══════════════════════════════════════════════════════
 function requestRematch(){
   if(myRole==='host'){
-    const pairs=shuffle(PAIRS).slice(0,6);
+    const pairs=pickPairs();
     gs={leftCards:shuffle(pairs.map(p=>({id:p.id,word:p.word}))),rightCards:shuffle(pairs.map(p=>({id:p.id,meaning:p.unc,ru:p.ru}))),matched:[],scores:{host:0,guest:0},lives:{host:3,guest:3},turn:'host',status:'playing',startedAt:Date.now(),finishedAt:null,mode:gs.mode,diff:gs.diff,blitzEnd:gs.mode==='blitz'?Date.now()+60000:null};
     send({type:'rematch',state:gs}); myStreak=0; oppStreak=0; powerups={freeze:2,hint:2}; frozenUntil=0;
     startRender(); go('sGame');
@@ -909,8 +1013,10 @@ function requestRematch(){
 
 function leaveRoom(){
   clearAllTimers();
-  if(conn) conn.close(); if(peer) peer.destroy();
-  peer=null; conn=null; connected=false; myRole=null; roomCode=''; gs=null; selL=null; selR=null;
+  if(ablyChannel){ try{ ablyChannel.unsubscribe(); }catch(e){} ablyChannel=null; }
+  if(ablyClient){ try{ ablyClient.close(); }catch(e){} ablyClient=null; }
+  connected=false; myRole=null; roomCode=''; gs=null; selL=null; selR=null;
+  peer=null; conn=null;
   hideBadge(); go('sHome');
 }
 
