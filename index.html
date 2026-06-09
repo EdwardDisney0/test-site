@@ -3,447 +3,1442 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Neon Mafia Cyber-Club</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<title>МАФИЯ — Multiplayer</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #05050a; --s1: #0d0d18; --s2: #14142b;
-  --b1: rgba(255, 255, 255, .05); --b2: rgba(255, 255, 255, .12);
-  --text: #f1f1f6; --m: rgba(241, 241, 246, .4);
-  --neon-red: #ff3366; --neon-blue: #00f0ff; --neon-green: #39ff14; --neon-purple: #bd00ff;
-  --r: 16px;
+  --night: #0a0a0f;
+  --night2: #111118;
+  --night3: #18181f;
+  --night4: #22222c;
+  --night5: #2a2a38;
+  --blood: #c0392b;
+  --blood2: #e74c3c;
+  --gold: #f39c12;
+  --gold2: #f1c40f;
+  --civic: #27ae60;
+  --civic2: #2ecc71;
+  --ghost: rgba(255,255,255,0.06);
+  --ghost2: rgba(255,255,255,0.12);
+  --ghost3: rgba(255,255,255,0.22);
+  --text: #f0f0f0;
+  --muted: rgba(240,240,240,0.45);
+  --muted2: rgba(240,240,240,0.65);
+  --r: 10px;
+  --rl: 16px;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
-  overflow-x: hidden; min-height: 100vh;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--night);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+
+/* Atmospheric background */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 20% 10%,rgba(192,57,43,0.07),transparent 55%),
+    radial-gradient(ellipse 50% 35% at 80% 90%,rgba(39,174,96,0.05),transparent 50%),
+    radial-gradient(ellipse 40% 60% at 50% 50%,rgba(243,156,18,0.03),transparent 60%);
+  pointer-events:none;z-index:0;
 }
-body::before {
-  content: ''; position: fixed; inset: 0;
-  background: radial-gradient(circle at 50% 10%, rgba(0,240,255,0.06), transparent 50%),
-              radial-gradient(circle at 90% 80%, rgba(255,51,102,0.05), transparent 50%);
-  pointer-events: none; z-index: 0;
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;z-index:0;
 }
 
-#app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
-header {
-  padding: 1.2rem 2rem; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--b1); background: rgba(5,5,10,.8); backdrop-filter: blur(20px);
+#app{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+
+/* ─── HEADER ─── */
+header{
+  padding:.9rem 1.6rem;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--ghost2);
+  background:rgba(10,10,15,0.9);backdrop-filter:blur(14px);
+  position:sticky;top:0;z-index:50;
 }
-.logo { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px; color: var(--neon-red); text-shadow: 0 0 10px rgba(255,51,102,0.4); }
-.logo span { color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,240,255,0.4); }
-
-.screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
-.screen.active { display: flex; }
-
-h1 { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: clamp(2rem, 6vw, 3.5rem); text-align: center; text-transform: uppercase; margin-bottom: 1rem; line-height: 1.1; }
-h1 em { font-style: normal; color: var(--neon-blue); text-shadow: 0 0 15px var(--neon-blue); }
-
-.btn {
-  font-family: 'Orbitron', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 0.85rem;
-  padding: 14px 28px; border-radius: var(--r); border: none; cursor: pointer; transition: all .2s; letter-spacing: 1px;
+.logo{
+  font-family:'Unbounded',sans-serif;font-size:1.05rem;font-weight:900;
+  display:flex;align-items:center;gap:10px;letter-spacing:.02em;
 }
-.bp { background: var(--neon-red); color: #fff; box-shadow: 0 0 15px rgba(255,51,102,0.4); }
-.bp:hover { background: #ff5588; transform: translateY(-2px); box-shadow: 0 0 25px rgba(255,51,102,0.7); }
-.bs { background: var(--s2); color: var(--text); border: 1px solid var(--neon-blue); box-shadow: 0 0 10px rgba(0,240,255,0.1); }
-.bs:hover { border-color: #55f5ff; transform: translateY(-2px); box-shadow: 0 0 20px rgba(0,240,255,0.3); }
-
-.panel { background: var(--s1); border: 1px solid var(--b2); border-radius: 24px; padding: 2rem; width: 100%; max-width: 460px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-.input-neon { width: 100%; background: var(--s2); border: 1px solid var(--b2); border-radius: var(--r); color: #fff; padding: 12px 16px; font-size: 1rem; outline: none; margin-bottom: 1.2rem; transition: border .2s; }
-.input-neon:focus { border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0,240,255,0.2); }
-
-/* ИГРОВОЙ ИНТЕРФЕЙС */
-.game-layout { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; width: 100%; max-width: 1200px; padding: 1rem; }
-.board-main { background: rgba(13,13,24,0.7); border: 1px solid var(--b2); border-radius: 24px; padding: 2rem; backdrop-filter: blur(10px); }
-.sidebar-panel { background: var(--s1); border: 1px solid var(--b2); border-radius: 24px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
-
-.status-banner { padding: 15px; border-radius: var(--r); text-align: center; font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.2rem; margin-bottom: 1.5rem; letter-spacing: 1px; }
-.status-banner.day { background: rgba(0,240,255,0.1); border: 1px solid var(--neon-blue); color: var(--neon-blue); box-shadow: 0 0 15px rgba(0,240,255,0.2); }
-.status-banner.night { background: rgba(189,0,255,0.1); border: 1px solid var(--neon-purple); color: var(--neon-purple); box-shadow: 0 0 15px rgba(189,0,255,0.2); }
-
-/* СЕТКА ИГРОКОВ И КАРТОЧКИ */
-.grid-players { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; }
-.card-player {
-  background: var(--s2); border: 1px solid var(--b1); border-radius: var(--r); padding: 20px 10px;
-  text-align: center; position: relative; transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer;
+.logo-icon{
+  width:34px;height:34px;background:linear-gradient(135deg,var(--blood),var(--blood2));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;
 }
-.card-player:hover:not(.dead) { transform: translateY(-5px); border-color: var(--neon-blue); box-shadow: 0 10px 20px rgba(0,240,255,0.15); }
-.card-player.dead { opacity: 0.3; filter: grayscale(1); border-color: transparent; pointer-events: none; }
-.card-player.talking { border-color: var(--neon-green) !important; box-shadow: 0 0 20px rgba(57,255,20,0.4) !important; }
+.logo span{background:linear-gradient(120deg,#fff,var(--blood2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+#roomBadge{
+  font-size:11px;padding:3px 12px;border-radius:20px;
+  background:var(--ghost);border:1px solid var(--ghost2);
+  color:var(--muted2);display:none;letter-spacing:.06em;
+}
+.phase-indicator{
+  display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);
+  display:none;
+}
+.phase-dot{width:8px;height:8px;border-radius:50%}
 
-.avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #1e1e38, #2a2a4e); margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid var(--b2); }
-.card-player.talking .avatar { border-color: var(--neon-green); }
+/* ─── SCREENS ─── */
+.screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;min-height:calc(100vh - 60px)}
+.screen.active{display:flex}
 
-.mic-indicator { position: absolute; top: 10px; right: 10px; font-size: 14px; }
-.mic-on { color: var(--neon-green); text-shadow: 0 0 5px var(--neon-green); }
-.mic-off { color: var(--neon-red); opacity: 0.5; }
+/* ─── HOME ─── */
+.home-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(192,57,43,0.12),transparent 60%);
+  pointer-events:none;
+}
+.moon{
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fff5d0,#f0d060 40%,#c8a020 80%);
+  box-shadow:0 0 60px rgba(240,200,30,0.2),0 0 120px rgba(240,200,30,0.08);
+  margin-bottom:2rem;position:relative;
+  animation:moonGlow 4s ease-in-out infinite;
+}
+.moon::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,transparent 45%,rgba(0,0,0,0.15) 100%);
+}
+@keyframes moonGlow{0%,100%{box-shadow:0 0 60px rgba(240,200,30,0.2),0 0 120px rgba(240,200,30,0.08)}50%{box-shadow:0 0 80px rgba(240,200,30,0.3),0 0 160px rgba(240,200,30,0.12)}}
+.home-title{
+  font-family:'Unbounded',sans-serif;font-size:clamp(2.5rem,8vw,5rem);font-weight:900;
+  letter-spacing:-.02em;text-align:center;line-height:1;
+  background:linear-gradient(180deg,#fff 0%,#ddd 40%,#aaa 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:.5rem;
+}
+.home-sub{
+  font-size:.9rem;color:var(--muted);text-align:center;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:2.5rem;
+}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{
+  font-family:'Inter',sans-serif;font-size:.88rem;font-weight:600;
+  padding:11px 26px;border-radius:var(--r);border:none;cursor:pointer;
+  transition:all .15s;letter-spacing:.01em;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.btn-blood{background:var(--blood);color:#fff}.btn-blood:hover{background:var(--blood2);transform:translateY(-1px)}
+.btn-outline{background:var(--ghost);color:var(--text);border:1px solid var(--ghost2)}.btn-outline:hover{border-color:var(--ghost3)}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--ghost)}.btn-ghost:hover{color:var(--text);border-color:var(--ghost2)}
+.btn:active{transform:scale(.97)!important}.btn:disabled{opacity:.3;pointer-events:none}
+.bfull{width:100%}
 
-.badge-role { font-size: 10px; font-family: 'Orbitron', sans-serif; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-top: 8px; display: inline-block; background: rgba(255,255,255,0.05); }
+/* ─── PANEL ─── */
+.panel{
+  background:var(--night2);border:1px solid var(--ghost2);border-radius:var(--rl);
+  padding:1.6rem;width:100%;max-width:460px;
+}
+.ptitle{font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.4rem;letter-spacing:-.01em}
+.lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=number]{
+  width:100%;background:var(--night3);border:1px solid var(--ghost2);
+  border-radius:var(--r);color:var(--text);font-family:'Inter',sans-serif;
+  font-size:.93rem;padding:10px 14px;outline:none;transition:border-color .15s;margin-bottom:.9rem;
+}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--blood)}
+input::placeholder{color:rgba(240,240,240,0.2)}
+.row2{display:flex;gap:8px}
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:.9rem}
+.opt-card{
+  background:var(--night3);border:1.5px solid var(--ghost);border-radius:var(--r);
+  padding:10px 12px;cursor:pointer;transition:all .15s;text-align:left;
+}
+.opt-card:hover{border-color:var(--ghost2)}
+.opt-card.chosen{border-color:var(--blood);background:rgba(192,57,43,0.08)}
+.opt-title{font-size:.83rem;font-weight:600;margin-bottom:2px}
+.opt-sub{font-size:10px;color:var(--muted);line-height:1.4}
+.codebox{
+  background:var(--night3);border:1px solid var(--ghost2);border-radius:var(--r);
+  padding:1rem;text-align:center;margin:.9rem 0;
+}
+.codebox .cl{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.codebox .cv{font-family:'Unbounded',sans-serif;font-size:2.4rem;font-weight:900;letter-spacing:.15em;color:var(--gold)}
+.info{font-size:11px;color:var(--muted);text-align:center;margin-top:.7rem;line-height:1.6}
 
-/* ТАЙМЕРЫ И ЛОГ */
-.timer-bar { width: 100%; height: 6px; background: var(--s2); border-radius: 3px; margin-bottom: 1.5rem; overflow: hidden; }
-.timer-progress { width: 100%; height: 100%; background: var(--neon-blue); transition: width 1s linear; }
+/* ─── LOBBY ─── */
+.slots{display:flex;flex-direction:column;gap:7px;margin:.9rem 0}
+.slot{
+  display:flex;align-items:center;gap:11px;
+  background:var(--night3);border:1px solid var(--ghost);border-radius:var(--r);
+  padding:11px 14px;transition:border-color .2s;
+}
+.slot.me{border-color:rgba(243,156,18,0.3)}
+.slot.ready{border-color:rgba(39,174,96,0.3)}
+.av{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;font-family:'Unbounded',sans-serif;flex-shrink:0;
+  background:var(--night4);border:2px solid var(--ghost2);
+}
+.sn{font-size:.87rem;font-weight:600}.ss{font-size:10px;color:var(--muted)}
+.sdot{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0}
+.sdot-on{background:var(--civic);box-shadow:0 0 6px rgba(39,174,96,0.5)}
+.sdot-wait{background:rgba(255,255,255,0.2);animation:pulse 1.8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
 
-.log-screen { flex: 1; min-height: 250px; background: #07070f; border: 1px solid var(--b2); border-radius: var(--r); padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-family: 'Inter', sans-serif; }
-.log-row { padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.02); line-height: 1.4; }
-.log-sys { color: var(--neon-blue); font-weight: bold; }
-.log-maf { color: var(--neon-red); }
+/* ─── ROLE CARD ─── */
+#sRole{background:var(--night)}
+.role-reveal{
+  text-align:center;max-width:380px;
+  animation:roleAppear .6s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes roleAppear{from{transform:scale(.7) rotate(-5deg);opacity:0}to{transform:scale(1) rotate(0deg);opacity:1}}
+.role-card{
+  width:240px;height:340px;margin:0 auto 1.5rem;
+  border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;position:relative;overflow:hidden;border:2px solid;
+}
+.role-card.mafia{
+  background:linear-gradient(160deg,#1a0a0a,#2d0d0d);border-color:var(--blood);
+  box-shadow:0 0 40px rgba(192,57,43,0.25);
+}
+.role-card.detective{
+  background:linear-gradient(160deg,#0a0e1a,#0d1a30);border-color:#3498db;
+  box-shadow:0 0 40px rgba(52,152,219,0.2);
+}
+.role-card.doctor{
+  background:linear-gradient(160deg,#0a1a10,#0d2d18);border-color:var(--civic);
+  box-shadow:0 0 40px rgba(39,174,96,0.2);
+}
+.role-card.civilian{
+  background:linear-gradient(160deg,#141414,#1e1e1e);border-color:#888;
+  box-shadow:0 0 20px rgba(255,255,255,0.05);
+}
+.role-card.don{
+  background:linear-gradient(160deg,#1a0505,#350808);border-color:var(--gold);
+  box-shadow:0 0 40px rgba(243,156,18,0.2);
+}
+.role-icon{font-size:64px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5));animation:iconFloat 3s ease-in-out infinite}
+@keyframes iconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.role-name{font-family:'Unbounded',sans-serif;font-size:1.3rem;font-weight:900;letter-spacing:.05em}
+.role-desc{font-size:11px;color:var(--muted2);text-align:center;padding:0 16px;line-height:1.5}
+.role-card::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,0.01) 30px,rgba(255,255,255,0.01) 31px);
+}
 
-@media (max-width: 900px) { .game-layout { grid-template-columns: 1fr; } }
+/* ─── GAME SCREEN ─── */
+#sGame{justify-content:flex-start;align-items:stretch;padding:0}
+.game-layout{display:flex;flex-direction:column;height:calc(100vh - 60px);overflow:hidden}
+.game-top{padding:.7rem 1.2rem;border-bottom:1px solid var(--ghost);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--night2)}
+.phase-badge{
+  display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:20px;
+  font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+}
+.phase-night{background:rgba(100,60,200,0.15);border:1px solid rgba(100,60,200,0.3);color:#c8a0ff}
+.phase-day{background:rgba(243,156,18,0.12);border:1px solid rgba(243,156,18,0.3);color:var(--gold)}
+.phase-vote{background:rgba(192,57,43,0.12);border:1px solid rgba(192,57,43,0.3);color:var(--blood2)}
+.timer-ring{position:relative;flex-shrink:0}
+.timer-ring svg{transform:rotate(-90deg)}
+.timer-ring .tr-bg{fill:none;stroke:var(--ghost2);stroke-width:3}
+.timer-ring .tr-fill{fill:none;stroke:var(--gold);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .5s linear,stroke .3s}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700}
+.round-badge{font-size:11px;color:var(--muted);margin-left:auto}
+
+/* Host announcer */
+.host-box{
+  margin:.6rem 1.2rem;padding:.9rem 1.1rem;
+  background:var(--night3);border:1px solid var(--ghost2);border-radius:var(--r);
+  display:flex;align-items:flex-start;gap:10px;
+}
+.host-avatar{
+  width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--blood));
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  border:2px solid rgba(243,156,18,0.3);
+}
+.host-text{font-size:.83rem;line-height:1.55;color:var(--muted2)}
+.host-text strong{color:var(--gold);font-weight:600}
+.host-speaking{animation:hostPulse 1s ease-in-out infinite}
+@keyframes hostPulse{0%,100%{border-color:rgba(243,156,18,0.3)}50%{border-color:rgba(243,156,18,0.8);box-shadow:0 0 12px rgba(243,156,18,0.2)}}
+
+/* Players grid */
+.players-area{flex:1;overflow-y:auto;padding:.8rem 1.2rem;display:flex;flex-direction:column;gap:8px}
+.player-card{
+  background:var(--night3);border:1.5px solid var(--ghost);border-radius:var(--r);
+  padding:11px 14px;display:flex;align-items:center;gap:12px;
+  transition:all .2s;cursor:pointer;
+}
+.player-card:hover:not(.dead):not(.self){border-color:var(--ghost2);transform:translateY(-1px)}
+.player-card.self{border-color:rgba(243,156,18,0.25)}
+.player-card.dead{opacity:.4;pointer-events:none}
+.player-card.targeted{border-color:var(--blood);background:rgba(192,57,43,0.06)}
+.player-card.saved{border-color:var(--civic);background:rgba(39,174,96,0.06)}
+.player-card.selected{border-color:var(--blood2);background:rgba(231,76,60,0.1);box-shadow:0 0 0 1px var(--blood2)}
+.player-card.voted{border-color:rgba(243,156,18,0.4);background:rgba(243,156,18,0.06)}
+.player-av{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;font-family:'Unbounded',sans-serif;flex-shrink:0;
+  border:2px solid var(--ghost2);
+}
+.player-name-wrap{flex:1}
+.player-name{font-size:.9rem;font-weight:600}
+.player-role-badge{font-size:10px;color:var(--muted);margin-top:2px}
+.player-status{display:flex;align-items:center;gap:6px;margin-left:auto}
+.vote-count{
+  font-family:'Unbounded',sans-serif;font-size:.85rem;font-weight:700;
+  background:var(--night4);padding:2px 9px;border-radius:20px;color:var(--blood2);
+}
+.skull{font-size:18px}
+
+/* Action panel */
+.action-panel{
+  padding:.9rem 1.2rem;border-top:1px solid var(--ghost);background:var(--night2);
+}
+.action-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.action-btns{display:flex;gap:8px;flex-wrap:wrap}
+.action-btn{
+  flex:1;min-width:120px;padding:10px 16px;border-radius:var(--r);
+  font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;
+  font-family:'Inter',sans-serif;
+}
+.ab-red{background:rgba(192,57,43,0.15);color:var(--blood2);border:1px solid rgba(192,57,43,0.3)}
+.ab-red:hover{background:rgba(192,57,43,0.25)}
+.ab-green{background:rgba(39,174,96,0.12);color:var(--civic2);border:1px solid rgba(39,174,96,0.25)}
+.ab-green:hover{background:rgba(39,174,96,0.22)}
+.ab-blue{background:rgba(52,152,219,0.1);color:#74b9ff;border:1px solid rgba(52,152,219,0.25)}
+.ab-blue:hover{background:rgba(52,152,219,0.2)}
+.ab-gold{background:rgba(243,156,18,0.1);color:var(--gold);border:1px solid rgba(243,156,18,0.25)}
+.ab-gold:hover{background:rgba(243,156,18,0.2)}
+.ab-disabled{opacity:.3;pointer-events:none}
+
+/* Mic button */
+.mic-btn{
+  width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  transition:all .15s;background:var(--night4);border:1px solid var(--ghost2);
+}
+.mic-btn.on{background:rgba(192,57,43,0.2);border-color:var(--blood2);animation:micPulse 1s infinite}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.4)}50%{box-shadow:0 0 0 8px rgba(192,57,43,0)}}
+.mic-btn.off{opacity:.5}
+
+/* Result */
+.result-wrap{text-align:center;max-width:480px}
+.result-trophy{font-size:72px;margin-bottom:1rem;display:block;animation:bounce 1s ease-in-out}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.result-title{font-family:'Unbounded',sans-serif;font-size:2rem;font-weight:900;letter-spacing:-.02em;margin-bottom:.5rem}
+.result-sub{font-size:.9rem;color:var(--muted);margin-bottom:2rem;line-height:1.65}
+.winner-list{display:flex;flex-direction:column;gap:8px;margin-bottom:2rem;width:100%}
+.winner-row{
+  background:var(--night3);border:1px solid var(--ghost2);border-radius:var(--r);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;
+}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--night3);border:1px solid var(--ghost2);border-radius:var(--r);
+  padding:8px 16px;font-size:12px;transition:transform .25s;z-index:200;
+  white-space:nowrap;pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(39,174,96,0.4);color:var(--civic2)}
+.toast.err{border-color:rgba(192,57,43,0.4);color:var(--blood2)}
+.toast.info{border-color:rgba(243,156,18,0.4);color:var(--gold)}
+
+/* Night overlay */
+.night-overlay{
+  position:fixed;inset:0;background:rgba(10,5,30,0.85);z-index:100;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  backdrop-filter:blur(8px);
+}
+.night-title{font-family:'Unbounded',sans-serif;font-size:2rem;font-weight:900;color:#c8a0ff;text-align:center}
+.night-sub{font-size:.9rem;color:var(--muted);text-align:center;max-width:300px;line-height:1.65}
+.stars{position:absolute;inset:0;pointer-events:none}
+.star{position:absolute;width:2px;height:2px;background:#fff;border-radius:50%;animation:twinkle var(--d) ease-in-out infinite var(--delay)}
+@keyframes twinkle{0%,100%{opacity:.1}50%{opacity:.8}}
+
+/* Voting bar */
+.vote-bar-wrap{height:4px;background:var(--ghost);border-radius:2px;overflow:hidden;margin-top:4px}
+.vote-bar-fill{height:100%;background:linear-gradient(90deg,var(--blood),var(--blood2));border-radius:2px;transition:width .4s}
+
+/* Chat / log */
+.game-log{
+  max-height:120px;overflow-y:auto;padding:.6rem 1.2rem;
+  border-top:1px solid var(--ghost);font-size:11px;color:var(--muted);
+  line-height:1.7;
+}
+.log-entry{animation:logSlide .2s ease-out}
+@keyframes logSlide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.log-system{color:var(--gold);font-weight:500}
+.log-kill{color:var(--blood2)}
+.log-save{color:var(--civic2)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--ghost2);border-radius:2px}
+
+/* Mobile */
+@media(max-width:600px){
+  .panel{padding:1.1rem;border-radius:12px}
+  .ptitle{font-size:.9rem}
+  .home-title{font-size:3rem}
+  .moon{width:80px;height:80px}
+  .role-card{width:200px;height:280px}
+  .role-icon{font-size:50px}
+  .game-top{padding:.5rem .8rem;gap:7px}
+  .host-box{margin:.4rem .8rem;padding:.7rem .9rem}
+  .players-area{padding:.6rem .8rem}
+  .action-panel{padding:.7rem .8rem}
+  .action-btn{min-width:90px;font-size:.78rem;padding:8px 10px}
+  .game-log{padding:.5rem .8rem}
+}
 </style>
 </head>
 <body>
-
 <div id="app">
-  <header>
-    <div class="logo">NEON<span>MAFIA</span></div>
-    <div id="roomMeta" style="font-family:'Orbitron',sans-serif; color: var(--neon-blue)"></div>
-  </header>
-
-  <div class="screen active" id="sHome">
-    <h1>Cyberpunk <em>Mafia</em></h1>
-    <p style="color:var(--m); text-align:center; max-width:400px; margin-bottom:2rem; line-height:1.6">Автономный AI-Ведущий, встроенная голосовая связь высокого качества и неоновый кибер-интерфейс.</p>
-    <div style="display:flex; gap:12px; width:100%; justify-content:center">
-      <button class="btn bp" onclick="go('sCreate')">Создать Сервер</button>
-      <button class="btn bs" onclick="go('sJoin')">Вход по коду</button>
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌙</div>
+    <span>МАФИЯ</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <div id="roomBadge"></div>
+    <button class="mic-btn off" id="micBtn" title="Микрофон" onclick="toggleMic()" style="display:none">🎤</button>
+    <div class="phase-indicator" id="phaseIndicator">
+      <div class="phase-dot" id="phaseDot"></div>
+      <span id="phaseText"></span>
     </div>
   </div>
+</header>
 
-  <div class="screen" id="sCreate">
-    <div class="panel">
-      <h2 style="font-family:'Orbitron',sans-serif; margin-bottom:1.5rem">Настройки Игры</h2>
-      <input type="text" class="input-neon" id="cName" placeholder="Твой Кибер-Ник" value="Игрок_1">
-      <input type="text" class="input-neon" id="cCount" placeholder="Сколько мафии? (Обычно 1-3)" value="1">
-      <div style="display:flex; gap:10px; margin-top:1rem">
-        <button class="btn bp" style="flex:1" onclick="initLobby(true)">Запустить</button>
-        <button class="btn bs" onclick="go('sHome')">Назад</button>
-      </div>
+<!-- HOME -->
+<div class="screen active" id="sHome" style="position:relative">
+  <div class="home-bg"></div>
+  <div class="moon"></div>
+  <div class="home-title">МАФИЯ</div>
+  <div class="home-sub">Multiplayer · По коду комнаты</div>
+  <div class="btn-row">
+    <button class="btn btn-blood" onclick="go('sCreate')">Создать комнату</button>
+    <button class="btn btn-outline" onclick="go('sJoin')">Войти по коду</button>
+  </div>
+  <div style="margin-top:3rem;text-align:center">
+    <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Роли в игре</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <span style="font-size:12px;color:var(--muted2);background:var(--ghost);padding:4px 12px;border-radius:20px;border:1px solid var(--ghost2)">🔫 Мафия</span>
+      <span style="font-size:12px;color:var(--muted2);background:var(--ghost);padding:4px 12px;border-radius:20px;border:1px solid var(--ghost2)">👑 Дон</span>
+      <span style="font-size:12px;color:var(--muted2);background:var(--ghost);padding:4px 12px;border-radius:20px;border:1px solid var(--ghost2)">🔍 Детектив</span>
+      <span style="font-size:12px;color:var(--muted2);background:var(--ghost);padding:4px 12px;border-radius:20px;border:1px solid var(--ghost2)">💊 Доктор</span>
+      <span style="font-size:12px;color:var(--muted2);background:var(--ghost);padding:4px 12px;border-radius:20px;border:1px solid var(--ghost2)">👤 Мирный</span>
     </div>
   </div>
-
-  <div class="screen" id="sJoin">
-    <div class="panel">
-      <h2 style="font-family:'Orbitron',sans-serif; margin-bottom:1.5rem">Вход в Сеть</h2>
-      <input type="text" class="input-neon" id="jName" placeholder="Твой Кибер-Ник">
-      <input type="text" class="input-neon" id="jCode" placeholder="Код Комнаты" style="text-align:center; font-size:1.4rem; font-family:'Orbitron',sans-serif">
-      <div style="display:flex; gap:10px; margin-top:1rem">
-        <button class="btn bp" style="flex:1" onclick="initLobby(false)">Подключиться</button>
-        <button class="btn bs" onclick="go('sHome')">Назад</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="screen" id="sLobby">
-    <div class="panel" style="text-align:center">
-      <div style="font-size:11px; text-transform:uppercase; color:var(--m); letter-spacing:2px">Частота Комнаты</div>
-      <div style="font-family:'Orbitron',sans-serif; font-size:2.5rem; color:var(--neon-blue); margin:10px 0; text-shadow:0 0 15px rgba(0,240,255,0.4)" id="lobbyCodeDisp">0000</div>
-      
-      <div style="text-align:left; margin:1.5rem 0">
-        <div style="font-size:10px; text-transform:uppercase; color:var(--m); margin-bottom:8px">Синхронизированные Киборги:</div>
-        <div id="lobbyList" style="display:flex; flex-direction:column; gap:8px"></div>
-      </div>
-
-      <button class="btn bp" id="btnStartGame" style="width:100%; display:none" onclick="startAutomatedGame()">Инициализировать Игру</button>
-    </div>
-  </div>
-
-  <div class="screen" id="sGame" style="justify-content:flex-start; padding:1rem 0">
-    <div class="game-layout">
-      
-      <div class="board-main">
-        <div class="timer-bar"><div class="timer-progress" id="timerFill"></div></div>
-        <div id="gamePhaseBanner" class="status-banner day">🏙️ СЕТЬ СИНХРОНИЗИРОВАНА: ДЕНЬ</div>
-        
-        <div class="grid-players" id="playersGrid"></div>
-      </div>
-
-      <div class="sidebar-panel">
-        <div>
-          <div style="font-size:10px; text-transform:uppercase; color:var(--m)">Твой Профиль</div>
-          <div style="font-family:'Orbitron',sans-serif; font-size:1.1rem; margin-top:4px" id="myIdentity">Загрузка...</div>
-          <div class="badge-role" id="myRoleBadge" style="color:var(--neon-blue)">Мирный</div>
-        </div>
-        
-        <div style="display:flex; flex-direction:column; flex:1">
-          <div style="font-size:10px; text-transform:uppercase; color:var(--m); margin-bottom:6px">Протокол Событий Игры (AI):</div>
-          <div class="log-screen" id="aiLog"></div>
-        </div>
-
-        <div style="font-size:11px; color:var(--m); text-align:center" id="voiceStatus">🎤 Аудио-чат: Активен</div>
-      </div>
-
-    </div>
-  </div>
-
 </div>
 
+<!-- CREATE -->
+<div class="screen" id="sCreate">
+  <div class="panel">
+    <div class="ptitle">Создать комнату</div>
+    <div class="lbl">Ваше имя</div>
+    <input type="text" id="cName" placeholder="Введите имя" maxlength="14">
+    <div class="lbl">Количество игроков</div>
+    <div class="opt-grid" id="sizeGrid">
+      <div class="opt-card chosen" data-size="5" onclick="pickSize(this)"><div class="opt-title">5 игроков</div><div class="opt-sub">1 мафия, 1 детектив</div></div>
+      <div class="opt-card" data-size="7" onclick="pickSize(this)"><div class="opt-title">7 игроков</div><div class="opt-sub">2 мафии, 1 дон, детектив, доктор</div></div>
+      <div class="opt-card" data-size="8" onclick="pickSize(this)"><div class="opt-title">8 игроков</div><div class="opt-sub">2 мафии, 1 дон, 2 детектива, доктор</div></div>
+      <div class="opt-card" data-size="10" onclick="pickSize(this)"><div class="opt-title">10 игроков</div><div class="opt-sub">3 мафии, 1 дон, 2 детектива, 2 доктора</div></div>
+    </div>
+    <div class="lbl">Ведущий</div>
+    <div class="opt-grid" id="hostGrid">
+      <div class="opt-card chosen" data-host="auto" onclick="pickHost(this)"><div class="opt-title">🤖 Авто-ведущий</div><div class="opt-sub">ИИ ведёт игру автоматически</div></div>
+      <div class="opt-card" data-host="manual" onclick="pickHost(this)"><div class="opt-title">👤 Вручную</div><div class="opt-sub">Первый игрок — ведущий</div></div>
+    </div>
+    <div class="row2" style="margin-top:.4rem">
+      <button class="btn btn-blood" style="flex:1" onclick="createRoom()">Создать</button>
+      <button class="btn btn-ghost" onclick="go('sHome')">Назад</button>
+    </div>
+    <div id="createErr" class="info" style="color:var(--blood2);display:none"></div>
+  </div>
+</div>
+
+<!-- JOIN -->
+<div class="screen" id="sJoin">
+  <div class="panel">
+    <div class="ptitle">Войти по коду</div>
+    <div class="lbl">Ваше имя</div>
+    <input type="text" id="jName" placeholder="Введите имя" maxlength="14">
+    <div class="lbl">Код комнаты</div>
+    <input type="text" id="jCode" placeholder="XXXX" maxlength="6" style="font-size:1.8rem;font-weight:700;text-align:center;letter-spacing:.2em">
+    <div class="row2">
+      <button class="btn btn-blood" style="flex:1" onclick="joinRoom()">Войти</button>
+      <button class="btn btn-ghost" onclick="go('sHome')">Назад</button>
+    </div>
+    <div id="joinErr" class="info" style="color:var(--blood2);display:none"></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div class="screen" id="sLobby">
+  <div class="panel">
+    <div class="ptitle" id="lobbyTitle">Комната создана</div>
+    <div class="codebox">
+      <div class="cl">Поделитесь кодом с друзьями</div>
+      <div class="cv" id="lobbyCode">—</div>
+    </div>
+    <div class="slots" id="slots"></div>
+    <div id="startArea"></div>
+    <div class="info" id="lobbyInfo"></div>
+    <button class="btn btn-ghost bfull" style="margin-top:9px" onclick="leaveRoom()">Покинуть</button>
+  </div>
+</div>
+
+<!-- ROLE REVEAL -->
+<div class="screen" id="sRole">
+  <div class="role-reveal">
+    <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1.2rem;text-align:center">Ваша роль этой ночью</div>
+    <div class="role-card" id="roleCard">
+      <div class="role-icon" id="roleIcon">?</div>
+      <div class="role-name" id="roleName">—</div>
+      <div class="role-desc" id="roleDesc">—</div>
+    </div>
+    <div id="mafiaTeam" style="display:none;margin-bottom:1rem;text-align:center">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Ваша команда мафии:</div>
+      <div id="mafiaTeamList" style="display:flex;flex-wrap:wrap;gap:7px;justify-content:center"></div>
+    </div>
+    <button class="btn btn-blood" onclick="goToGame()" id="readyBtn">Я готов!</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="sGame">
+  <div class="game-layout" id="gameLayout">
+    <div class="game-top" id="gameTop">
+      <div class="phase-badge phase-day" id="phaseBadge">🌅 День 1</div>
+      <div class="timer-ring" id="timerRing" style="display:none">
+        <svg viewBox="0 0 44 44" width="44" height="44">
+          <circle class="tr-bg" cx="22" cy="22" r="18"/>
+          <circle class="tr-fill" id="timerCircle" cx="22" cy="22" r="18" stroke-dasharray="113" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-num" id="timerNum">60</div>
+      </div>
+      <div class="round-badge" id="roundBadge">Раунд 1</div>
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 11px;margin-left:auto" onclick="leaveRoom()">Выйти</button>
+    </div>
+    <div class="host-box" id="hostBox" style="display:none">
+      <div class="host-avatar">🎭</div>
+      <div class="host-text" id="hostText">Добро пожаловать...</div>
+    </div>
+    <div class="players-area" id="playersArea"></div>
+    <div class="game-log" id="gameLog"></div>
+    <div class="action-panel" id="actionPanel">
+      <div class="action-title" id="actionTitle">Действие</div>
+      <div class="action-btns" id="actionBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="screen" id="sResult">
+  <div class="result-wrap">
+    <span class="result-trophy" id="rTrophy">🏆</span>
+    <div class="result-title" id="rTitle">Игра окончена!</div>
+    <div class="result-sub" id="rSub">Результаты игры</div>
+    <div class="winner-list" id="rPlayers"></div>
+    <div class="btn-row">
+      <button class="btn btn-blood" onclick="playAgain()">Сыграть снова</button>
+      <button class="btn btn-ghost" onclick="go('sHome')">На главную</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
 <script>
-// Архитектура автоматического хостинга и P2P-эмуляции
-let session = {
-  isHost: false, roomCode: '', myName: '', players: [],
-  phase: 'day', timer: 30, currentSpeakerIndex: 0, loopInterval: null
+// ═══════════════════════════════════════════════
+// FIREBASE CONFIG
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyDemo-ReplaceWithYours",
+  authDomain: "mafia-demo.firebaseapp.com",
+  databaseURL: "https://mafia-game-demo-default-rtdb.firebaseio.com",
+  projectId: "mafia-demo",
+  storageBucket: "mafia-demo.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
 };
 
-const avatars = ['🤖','👾','💀','🎭','🕶️','👁️','🧠','⚡','🦾'];
+// NOTE: Replace with your own Firebase config!
+// For demo purposes the game works fully in single-player/local simulation mode
+// when Firebase is not configured.
 
+let db = null;
+let firebaseReady = false;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+  firebaseReady = true;
+} catch(e) {
+  console.log('Firebase not configured, using local simulation mode');
+}
+
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+let myId = 'p_' + Math.random().toString(36).slice(2,8);
+let myName = '';
+let roomCode = '';
+let roomRef = null;
+let gameState = null;
+let myRole = null;
+let selectedPlayer = null;
+let timerInterval = null;
+let speechSynth = window.speechSynthesis;
+let micStream = null;
+let isSpeaking = false;
+
+const ROLE_CONFIGS = {
+  mafia: {icon:'🔫', name:'Мафия', css:'mafia', desc:'Ночью выбирайте жертву вместе с командой. Днём — притворяйтесь мирным!', color:'var(--blood2)'},
+  don: {icon:'👑', name:'Дон Мафии', css:'don', desc:'Глава преступного мира. Можете проверить детектива. Ночью руководите мафией.', color:'var(--gold)'},
+  detective: {icon:'🔍', name:'Детектив', css:'detective', desc:'Каждую ночь проверяйте одного игрока — детектив видит принадлежность к мафии.', color:'#74b9ff'},
+  doctor: {icon:'💊', name:'Доктор', css:'doctor', desc:'Каждую ночь спасайте одного игрока от убийства мафии.', color:'var(--civic2)'},
+  civilian: {icon:'👤', name:'Мирный житель', css:'civilian', desc:'Днём голосуйте и вычисляйте мафию. Работайте вместе с командой!', color:'#aaa'},
+};
+
+const ROLE_COUNTS = {
+  5:  {mafia:1, detective:1, doctor:0, don:0, civilian:3},
+  7:  {mafia:2, detective:1, doctor:1, don:1, civilian:2},
+  8:  {mafia:2, detective:2, doctor:1, don:1, civilian:2},
+  10: {mafia:3, detective:2, doctor:2, don:1, civilian:2},
+};
+
+let chosenSize = 5;
+let chosenHostMode = 'auto';
+
+// ═══════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════
 function go(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
 
-// AI-Озвучка Автомата-Ведущего (Web Speech API)
-function aiSpeak(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    let utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ru-RU';
-    utterance.pitch = 0.9;
-    utterance.rate = 1.0;
-    window.speechSynthesis.speak(utterance);
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  if(el) { el.textContent = msg; el.style.display = 'block'; }
+}
+function hideErr(id) {
+  const el = document.getElementById(id);
+  if(el) el.style.display = 'none';
+}
+
+let toastTimer;
+function toast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function pickOpt(grid, el) {
+  document.querySelectorAll(`#${grid} .opt-card`).forEach(c => c.classList.remove('chosen'));
+  el.classList.add('chosen');
+}
+function pickSize(el) { chosenSize = parseInt(el.dataset.size); pickOpt('sizeGrid', el); }
+function pickHost(el) { chosenHostMode = el.dataset.host; pickOpt('hostGrid', el); }
+
+function genCode() { return Math.floor(1000 + Math.random() * 9000).toString(); }
+
+function avatarColor(name) {
+  const colors = ['#c0392b','#8e44ad','#2980b9','#27ae60','#e67e22','#e91e63','#00bcd4','#ff5722'];
+  let h = 0; for(let c of name) h = (h*31+c.charCodeAt(0)) % colors.length;
+  return colors[h];
+}
+
+function avatarInitials(name) { return name.slice(0,2).toUpperCase(); }
+
+// ═══════════════════════════════════════════════
+// LOCAL SIMULATION (no Firebase)
+// ═══════════════════════════════════════════════
+// When Firebase is not configured, game runs in demo mode with simulated players
+let localRoom = null;
+let localListeners = [];
+
+function localSet(path, data) {
+  if(!localRoom) localRoom = {};
+  const keys = path.split('/').filter(Boolean);
+  let cur = localRoom;
+  for(let i=0;i<keys.length-1;i++) {
+    if(!cur[keys[i]]) cur[keys[i]] = {};
+    cur = cur[keys[i]];
   }
-  // Дублируем в текстовый лог
-  const log = document.getElementById('aiLog');
-  if(log) {
-    log.innerHTML += `<div class="log-row"><span class="log-sys">[AI]:</span> ${text}</div>`;
-    log.scrollTop = log.scrollHeight;
+  cur[keys[keys.length-1]] = data;
+  notifyListeners();
+}
+
+function localUpdate(path, data) {
+  const keys = path.split('/').filter(Boolean);
+  let cur = localRoom || {};
+  for(let k of keys) {
+    if(!cur[k]) cur[k] = {};
+    cur = cur[k];
+  }
+  Object.assign(cur, data);
+  notifyListeners();
+}
+
+function localGet(path) {
+  if(!localRoom) return null;
+  const keys = path.split('/').filter(Boolean);
+  let cur = localRoom;
+  for(let k of keys) { if(!cur[k]) return null; cur = cur[k]; }
+  return cur;
+}
+
+function notifyListeners() {
+  localListeners.forEach(l => l(localRoom));
+}
+
+function roomListen(cb) { localListeners.push(cb); return () => { localListeners = localListeners.filter(l=>l!==cb); }; }
+
+// ═══════════════════════════════════════════════
+// ROOM MANAGEMENT
+// ═══════════════════════════════════════════════
+async function createRoom() {
+  const nameEl = document.getElementById('cName');
+  myName = nameEl.value.trim();
+  if(!myName) { showErr('createErr','Введите ваше имя'); return; }
+  hideErr('createErr');
+  roomCode = genCode();
+
+  const room = {
+    code: roomCode,
+    host: myId,
+    hostMode: chosenHostMode,
+    maxPlayers: chosenSize,
+    status: 'lobby',
+    round: 0,
+    phase: 'lobby',
+    players: {
+      [myId]: {id:myId, name:myName, alive:true, ready:false, joined:Date.now()}
+    }
+  };
+
+  if(firebaseReady && db) {
+    await db.ref('rooms/'+roomCode).set(room);
+    roomRef = db.ref('rooms/'+roomCode);
+    roomRef.on('value', snap => { if(snap.val()) handleRoomUpdate(snap.val()); });
+    db.ref('rooms/'+roomCode+'/players/'+myId).onDisconnect().remove();
+  } else {
+    localRoom = room;
+    roomListen(r => { if(r) handleRoomUpdate(r); });
+  }
+
+  showLobby(room, true);
+}
+
+async function joinRoom() {
+  const nameEl = document.getElementById('jName');
+  const codeEl = document.getElementById('jCode');
+  myName = nameEl.value.trim();
+  const code = codeEl.value.trim().toUpperCase();
+  if(!myName) { showErr('joinErr','Введите ваше имя'); return; }
+  if(!code) { showErr('joinErr','Введите код комнаты'); return; }
+  hideErr('joinErr');
+
+  if(firebaseReady && db) {
+    const snap = await db.ref('rooms/'+code).once('value');
+    const room = snap.val();
+    if(!room) { showErr('joinErr','Комната не найдена'); return; }
+    if(room.status !== 'lobby') { showErr('joinErr','Игра уже началась'); return; }
+    const playerCount = Object.keys(room.players||{}).length;
+    if(playerCount >= room.maxPlayers) { showErr('joinErr','Комната заполнена'); return; }
+    roomCode = code;
+    await db.ref('rooms/'+code+'/players/'+myId).set({id:myId,name:myName,alive:true,ready:false,joined:Date.now()});
+    roomRef = db.ref('rooms/'+code);
+    roomRef.on('value', snap => { if(snap.val()) handleRoomUpdate(snap.val()); });
+    db.ref('rooms/'+code+'/players/'+myId).onDisconnect().remove();
+    showLobby(room, false);
+  } else {
+    // Demo: join local room
+    if(!localRoom || localRoom.code !== code) { showErr('joinErr','Комната не найдена'); return; }
+    localRoom.players = localRoom.players || {};
+    localRoom.players[myId] = {id:myId,name:myName,alive:true,ready:false,joined:Date.now()};
+    roomCode = code;
+    roomListen(r => { if(r) handleRoomUpdate(r); });
+    showLobby(localRoom, false);
   }
 }
 
-// Инициализация лобби
-function initLobby(hostFlag) {
-  session.isHost = hostFlag;
-  session.myName = hostFlag ? document.getElementById('cName').value.trim() : document.getElementById('jName').value.trim();
-  session.roomCode = hostFlag ? Math.floor(1000 + Math.random()*9000).toString() : document.getElementById('jCode').value.trim();
-  
-  if(!session.myName) return alert('Укажите имя');
-  
-  document.getElementById('lobbyCodeDisp').innerText = session.roomCode;
-  if(session.isHost) document.getElementById('btnStartGame').style.display = 'block';
-
-  // Создаем фейковую сеть на локалсторадже для теста p2p соединения
-  if(session.isHost) {
-    session.players = [{name: session.myName, role: 'Загрузка', alive: true, mic: true, avatar: '🕶️'}];
-    localStorage.setItem('room_'+session.roomCode, JSON.stringify(session));
-  } else {
-    let hostData = localStorage.getItem('room_'+session.roomCode);
-    if(!hostData) {
-      // Для автономного теста, если комнаты нет, сгенерируем ее, чтобы игрок мог поиграть один с ботами
-      session.players = [];
-    }
-  }
-
-  updateLobbyList();
+function showLobby(room, isHost) {
+  document.getElementById('roomBadge').textContent = '# ' + roomCode;
+  document.getElementById('roomBadge').style.display = 'block';
+  document.getElementById('lobbyCode').textContent = roomCode;
+  document.getElementById('lobbyTitle').textContent = isHost ? 'Комната создана' : 'Ждём начала...';
   go('sLobby');
+  renderLobby(room);
+}
 
-  // Цикл сетевого сканирования игроков
-  setInterval(() => {
-    if(session.isHost) {
-      let req = localStorage.getItem('req_'+session.roomCode);
-      if(req) {
-        let pName = req;
-        if(!session.players.find(x => x.name === pName)) {
-          session.players.push({name: pName, role: 'Мирный', alive: true, mic: false, avatar: avatars[Math.floor(Math.random()*avatars.length)]});
-          localStorage.setItem('room_'+session.roomCode, JSON.stringify(session));
-          updateLobbyList();
-        }
-        localStorage.removeItem('req_'+session.roomCode);
-      }
+function renderLobby(room) {
+  const players = Object.values(room.players||{});
+  const isHost = room.host === myId;
+  const slots = document.getElementById('slots');
+  slots.innerHTML = '';
+  for(let i=0; i<room.maxPlayers; i++) {
+    const p = players[i];
+    const div = document.createElement('div');
+    div.className = 'slot' + (p && p.id === myId ? ' me' : '') + (p ? ' ready' : '');
+    if(p) {
+      div.innerHTML = `
+        <div class="av" style="background:${avatarColor(p.name)};border-color:${avatarColor(p.name)}33">${avatarInitials(p.name)}</div>
+        <div><div class="sn">${p.name}</div><div class="ss">${p.id===myId?'Это вы':'Игрок'}</div></div>
+        <div class="sdot sdot-on"></div>`;
     } else {
-      localStorage.setItem('req_'+session.roomCode, session.myName);
-      let data = localStorage.getItem('room_'+session.roomCode);
-      if(data) {
-        let parsed = JSON.parse(data);
-        if(parsed.players.length > 1 && session.players.length <= 1) {
-          session.players = parsed.players;
-          updateLobbyList();
-        }
-      }
+      div.innerHTML = `
+        <div class="av" style="opacity:.3;font-size:12px">?</div>
+        <div><div class="sn" style="color:var(--muted)">Ожидаем...</div><div class="ss">Слот ${i+1}</div></div>
+        <div class="sdot sdot-wait"></div>`;
     }
-  }, 1000);
-}
-
-function updateLobbyList() {
-  // Наполняем ботами для классного теста, если реальных игроков мало
-  if(session.isHost && session.players.length === 1) {
-    const bots = ['НейроКрис', 'КиберВлад', 'Матрица_9', '0xДжон', 'Алиса_AI'];
-    bots.forEach(b => session.players.push({name: b, role: 'Мирный', alive: true, mic: false, avatar: avatars[Math.floor(Math.random()*avatars.length)]}));
-  }
-  
-  const list = document.getElementById('lobbyList');
-  list.innerHTML = '';
-  session.players.forEach(p => {
-    list.innerHTML += `<div style="padding:10px; background:var(--s2); border-radius:10px; display:flex; justify-content:space-between"><span>${p.avatar} ${p.name}</span><span style="color:var(--neon-green)">ONLINE</span></div>`;
-  });
-}
-
-// ЗАПУСК АВТОМАТА-ВЕДУЩЕГО
-function startAutomatedGame() {
-  // Распределение ролей ИИ
-  let mafCount = parseInt(document.getElementById('cCount').value) || 1;
-  let pool = [...session.players];
-  pool.sort(() => Math.random() - 0.5);
-  
-  for(let i=0; i<pool.length; i++) {
-    let target = session.players.find(x => x.name === pool[i].name);
-    if(i < mafCount) target.role = 'Мафия';
-    else if(i === mafCount) target.role = 'Шериф';
-    else target.role = 'Мирный житель';
+    slots.appendChild(div);
   }
 
-  session.phase = 'day';
-  localStorage.setItem('room_'+session.roomCode, JSON.stringify(session));
-  
-  // Инициализируем интерфейс
-  initGameBoard();
-}
-
-function initGameBoard() {
-  // Синхронизация данных для не-хостов через интервал
-  if(!session.isHost) {
-    let data = JSON.parse(localStorage.getItem('room_'+session.roomCode));
-    if(data) session = data;
-  }
-
-  document.getElementById('roomMeta').innerText = `ROOM SECURE: #${session.roomCode}`;
-  document.getElementById('myIdentity').innerText = session.myName;
-  
-  let me = session.players.find(x => x.name === session.myName);
-  if(me) {
-    document.getElementById('myRoleBadge').innerText = me.role;
-    if(me.role === 'Мафия') document.getElementById('myRoleBadge').style.color = 'var(--neon-red)';
-  }
-
-  renderGrid();
-  go('sGame');
-  
-  // Запуск Автоматического Игрового Цикла
-  aiSpeak("Внимание всем игрокам. Кибер-система модерации активирована. Начинается первый день. У каждого игрока есть пятнадцать секунд на защиту.");
-  startPhaseTimer();
-}
-
-function renderGrid() {
-  const grid = document.getElementById('playersGrid');
-  grid.innerHTML = '';
-  
-  session.players.forEach((p, idx) => {
-    // Мафия видит мафию, мирные видят скрытые роли
-    let roleText = 'Скрыта';
-    if(session.isHost || p.name === session.myName || (document.getElementById('myRoleBadge').innerText === 'Мафия' && p.role === 'Мафия')) {
-      roleText = p.role;
-    }
-    if(!p.alive) roleText = `ЛИКВИДИРОВАН [была: ${p.role}]`;
-
-    grid.innerHTML += `
-      <div class="card-player ${p.alive ? '' : 'dead'} ${p.mic ? 'talking' : ''}" onclick="voteOrKill(${idx})">
-        <div class="mic-indicator">${p.mic ? '<span class="mic-on">🎤 ON</span>' : '<span class="mic-off">🔇 MUTED</span>'}</div>
-        <div class="avatar">${p.avatar}</div>
-        <div style="font-weight:700; font-size:13px; margin-bottom:4px">${p.name}</div>
-        <div style="font-size:10px; opacity:0.6; color:${p.role==='Мафия'?'var(--neon-red)':''}">${roleText}</div>
-      </div>
-    `;
-  });
-}
-
-// Автоматический таймер фаз и микрофонов
-function startPhaseTimer() {
-  let timeLeft = session.phase === 'day' ? 15 : 10; // Дневная речь игрока или ночной выбор
-  const bar = document.getElementById('timerFill');
-  
-  // Даем микрофон текущему спикеру дня
-  if(session.phase === 'day') {
-    session.players.forEach((p, idx) => p.mic = (idx === session.currentSpeakerIndex && p.alive));
-    let activeSpeaker = session.players[session.currentSpeakerIndex];
-    if(activeSpeaker && activeSpeaker.alive) {
-      aiSpeak(`Слово предоставляется игроку ${activeSpeaker.name}. Микрофон включен.`);
-    }
+  const startArea = document.getElementById('startArea');
+  const info = document.getElementById('lobbyInfo');
+  if(isHost) {
+    const canStart = players.length >= room.maxPlayers;
+    startArea.innerHTML = `<button class="btn btn-blood bfull" onclick="startGame()" ${canStart?'':'disabled'} style="${canStart?'':'opacity:.4'}">${canStart?'🎭 Начать игру!':'Ждём игроков (' + players.length + '/' + room.maxPlayers + ')'}</button>`;
+    if(!canStart) info.textContent = `Нужно ещё ${room.maxPlayers - players.length} ${pluralPlayers(room.maxPlayers - players.length)}`;
+    else info.textContent = 'Все на месте! Можно начинать!';
   } else {
-    // Ночью у всех обычных игроков микрофоны выключаются автоматически автоматом
-    session.players.forEach(p => p.mic = false);
-    aiSpeak("Город засыпает. Наступает ночь. Мафия, выберите жертву на экранах устройств.");
+    startArea.innerHTML = '';
+    info.textContent = `Ждём ведущего... (${players.length}/${room.maxPlayers})`;
   }
-  
-  renderGrid();
 
-  if(session.loopInterval) clearInterval(session.loopInterval);
-  
-  session.loopInterval = setInterval(() => {
-    timeLeft--;
-    if(bar) bar.style.width = (timeLeft / (session.phase === 'day' ? 15 : 10) * 100) + '%';
-    
-    if(timeLeft <= 0) {
-      clearInterval(session.loopInterval);
-      
-      if(session.phase === 'day') {
-        // Переключаем на следующего спикера
-        session.currentSpeakerIndex++;
-        if(session.currentSpeakerIndex >= session.players.length) {
-          session.currentSpeakerIndex = 0;
-          session.phase = 'night';
-          document.getElementById('gamePhaseBanner').className = "status-banner night";
-          document.getElementById('gamePhaseBanner').innerText = "🌙 АВТОМАТ: СЕТЬ В ТЕМНОТЕ (НОЧЬ)";
-        }
-        startPhaseTimer();
-      } else {
-        // Конец ночи
-        session.phase = 'day';
-        document.getElementById('gamePhaseBanner').className = "status-banner day";
-        document.getElementById('gamePhaseBanner').innerText = "🏙️ СЕТЬ СИНХРОНИЗИРОВАНА: ДЕНЬ";
-        aiSpeak("Наступило утро. Город открывает глаза.");
-        startPhaseTimer();
-      }
-    }
-  }, 1000);
-}
-
-// Интерактивное действие: Клик на карточку игрока (Голосование/Убийство мафией)
-function voteOrKill(index) {
-  let target = session.players[index];
-  if(!target.alive) return;
-
-  if(session.phase === 'night') {
-    let me = session.players.find(x => x.name === session.myName);
-    if(me && me.role === 'Мафия') {
-      target.alive = false;
-      aiSpeak(`Система зафиксировала ночную атаку. Игрок ${target.name} был ликвидирован мафией.`);
-      renderGrid();
-    }
-  } else {
-    // Дневной суд города
-    let confirmVote = confirm(`Выгнать со стола игрока ${target.name}?`);
-    if(confirmVote) {
-      target.alive = false;
-      aiSpeak(`Большинством голосов житель ${target.name} отключается от сервера.`);
-      renderGrid();
-      checkWinConditions();
+  // Demo: add bots if needed (single player demo mode)
+  if(!firebaseReady && isHost && players.length < room.maxPlayers) {
+    const botBtn = document.getElementById('addBotBtn');
+    if(!botBtn) {
+      const bb = document.createElement('button');
+      bb.id = 'addBotBtn';
+      bb.className = 'btn btn-outline bfull';
+      bb.style.marginTop = '8px';
+      bb.textContent = '🤖 Добавить бота (демо режим)';
+      bb.onclick = addBot;
+      startArea.appendChild(bb);
     }
   }
 }
 
-function checkWinConditions() {
-  let mafs = session.players.filter(p => p.role === 'Мафия' && p.alive).length;
-  let civs = session.players.filter(p => p.role !== 'Мафия' && p.alive).length;
-  
-  if(mafs === 0) {
-    aiSpeak("Поздравляем! Все вирусы мафии удалены. Мирные жители победили!");
-    clearInterval(session.loopInterval);
-  } else if(mafs >= civs) {
-    aiSpeak("Критическая ошибка безопасности. Мафия захватила контроль над сервером. Победа Мафии.");
-    clearInterval(session.loopInterval);
-  }
+function pluralPlayers(n) { return n===1?'игрока':'игроков'; }
+
+async function addBot() {
+  if(!localRoom) return;
+  const botNames = ['Александр','Мария','Дмитрий','Екатерина','Иван','Анна','Сергей','Наталья','Михаил','Ольга'];
+  const existing = Object.values(localRoom.players||{}).map(p=>p.name);
+  const avail = botNames.filter(n=>!existing.includes(n));
+  if(!avail.length) return;
+  const botId = 'bot_' + Math.random().toString(36).slice(2,6);
+  localRoom.players[botId] = {id:botId, name:avail[0], alive:true, ready:false, isBot:true, joined:Date.now()};
+  notifyListeners();
 }
 
-// Интеграция реального микрофона через WebRTC API (Локальный захват звука)
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({ audio: true })
-    .then(stream => {
-      document.getElementById('voiceStatus').innerText = "🎤 Аудио-поток подключен к WebRTC";
-      document.getElementById('voiceStatus').style.color = "var(--neon-green)";
-    })
-    .catch(err => {
-      document.getElementById('voiceStatus').innerText = "⚠️ Микрофон заблокирован браузером";
-      document.getElementById('voiceStatus').style.color = "var(--neon-red)";
+async function startGame() {
+  const room = gameState || localRoom;
+  const players = Object.values(room.players||{});
+  if(players.length < room.maxPlayers) { toast('Нужно больше игроков!','err'); return; }
+
+  // Assign roles
+  const counts = ROLE_COUNTS[room.maxPlayers] || ROLE_COUNTS[5];
+  const roles = [];
+  for(let [role, count] of Object.entries(counts)) {
+    for(let i=0;i<count;i++) roles.push(role);
+  }
+  // Shuffle
+  for(let i=roles.length-1;i>0;i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [roles[i],roles[j]] = [roles[j],roles[i]];
+  }
+
+  const shuffledPlayers = [...players].sort(() => Math.random()-.5);
+  const updates = {};
+  shuffledPlayers.forEach((p,i) => {
+    updates[p.id] = {...p, role: roles[i], alive: true};
+  });
+
+  if(firebaseReady && db) {
+    await db.ref('rooms/'+roomCode).update({
+      status:'playing', phase:'night', round:1,
+      players: updates,
+      nightTarget: null,
+      savedPlayer: null,
+      votes: {},
+      eliminated: null,
     });
+  } else {
+    localRoom.status = 'playing';
+    localRoom.phase = 'night';
+    localRoom.round = 1;
+    localRoom.players = updates;
+    localRoom.nightTarget = null;
+    localRoom.savedPlayer = null;
+    localRoom.votes = {};
+    localRoom.eliminated = null;
+    notifyListeners();
+  }
 }
+
+function handleRoomUpdate(room) {
+  gameState = room;
+  const players = Object.values(room.players||{});
+  const me = room.players?.[myId];
+
+  if(room.status === 'lobby') {
+    if(document.getElementById('sLobby').classList.contains('active')) {
+      renderLobby(room);
+    }
+    return;
+  }
+
+  if(room.status === 'playing') {
+    if(document.getElementById('sRole').classList.contains('active')) {
+      renderGame(room);
+      return;
+    }
+    if(!document.getElementById('sGame').classList.contains('active') &&
+       !document.getElementById('sRole').classList.contains('active')) {
+      if(me) showRoleReveal(me.role, room);
+    } else if(document.getElementById('sGame').classList.contains('active')) {
+      renderGame(room);
+    }
+  }
+
+  if(room.status === 'finished') {
+    showResult(room);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// ROLE REVEAL
+// ═══════════════════════════════════════════════
+function showRoleReveal(role, room) {
+  myRole = role;
+  const cfg = ROLE_CONFIGS[role] || ROLE_CONFIGS.civilian;
+  const card = document.getElementById('roleCard');
+  card.className = 'role-card ' + cfg.css;
+  document.getElementById('roleIcon').textContent = cfg.icon;
+  document.getElementById('roleName').textContent = cfg.name;
+  document.getElementById('roleDesc').textContent = cfg.desc;
+
+  // Show mafia teammates
+  const mafiaRoles = ['mafia','don'];
+  if(mafiaRoles.includes(role)) {
+    const teammates = Object.values(room.players||{}).filter(p=>p.id!==myId && mafiaRoles.includes(p.role));
+    if(teammates.length > 0) {
+      const teamDiv = document.getElementById('mafiaTeam');
+      teamDiv.style.display = 'block';
+      document.getElementById('mafiaTeamList').innerHTML = teammates.map(p=>`
+        <span style="background:rgba(192,57,43,0.15);border:1px solid rgba(192,57,43,0.3);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--blood2)">${p.name} (${ROLE_CONFIGS[p.role].name})</span>
+      `).join('');
+    }
+  }
+
+  go('sRole');
+  speak(`Ваша роль — ${cfg.name}. ${cfg.desc}`);
+}
+
+function goToGame() {
+  go('sGame');
+  if(gameState) renderGame(gameState);
+  // Start auto-host if needed
+  if(gameState && gameState.host === myId && gameState.hostMode === 'auto') {
+    setTimeout(() => runAutoHost(gameState), 800);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// GAME RENDERING
+// ═══════════════════════════════════════════════
+function renderGame(room) {
+  const players = Object.values(room.players||{});
+  const me = room.players?.[myId];
+
+  // Phase badge
+  const badge = document.getElementById('phaseBadge');
+  if(room.phase === 'night') {
+    badge.className = 'phase-badge phase-night';
+    badge.textContent = `🌙 Ночь ${room.round}`;
+  } else if(room.phase === 'vote') {
+    badge.className = 'phase-badge phase-vote';
+    badge.textContent = `⚖️ Голосование`;
+  } else {
+    badge.className = 'phase-badge phase-day';
+    badge.textContent = `☀️ День ${room.round}`;
+  }
+  document.getElementById('roundBadge').textContent = `Раунд ${room.round}`;
+
+  // Host box
+  const hostBox = document.getElementById('hostBox');
+  if(room.hostMode === 'auto' || room.hostAnnouncement) {
+    hostBox.style.display = 'flex';
+    const msg = room.hostAnnouncement || getHostMessage(room);
+    document.getElementById('hostText').innerHTML = msg;
+  }
+
+  // Players
+  const area = document.getElementById('playersArea');
+  area.innerHTML = '';
+  const votes = room.votes || {};
+  const maxVotes = Math.max(1, ...Object.values(votes));
+
+  players.sort((a,b) => a.joined - b.joined).forEach(p => {
+    const card = document.createElement('div');
+    const voteCount = Object.values(votes).filter(v=>v===p.id).length;
+    const isSelected = selectedPlayer === p.id;
+    const isMe = p.id === myId;
+    const isMafia = me && ['mafia','don'].includes(me.role) && ['mafia','don'].includes(p.role) && p.id !== myId;
+
+    card.className = 'player-card' +
+      (isMe?' self':'') +
+      (!p.alive?' dead':'') +
+      (isSelected?' selected':'') +
+      (room.nightTarget===p.id&&room.phase==='night'?' targeted':'') +
+      (room.savedPlayer===p.id?' saved':'');
+
+    if(p.alive && !isMe) card.onclick = () => selectPlayer(p.id);
+
+    // Reveal role after death or to mafia teammates
+    let roleShow = '';
+    if(!p.alive && p.role) roleShow = `<span style="color:${ROLE_CONFIGS[p.role].color};font-size:10px">${ROLE_CONFIGS[p.role].icon} ${ROLE_CONFIGS[p.role].name}</span>`;
+    else if(isMe && me) roleShow = `<span style="color:${ROLE_CONFIGS[me.role].color};font-size:10px">${ROLE_CONFIGS[me.role].icon} ${ROLE_CONFIGS[me.role].name}</span>`;
+    else if(isMafia && p.role) roleShow = `<span style="color:${ROLE_CONFIGS[p.role].color};font-size:10px">${ROLE_CONFIGS[p.role].icon}</span>`;
+
+    card.innerHTML = `
+      <div class="player-av" style="background:${avatarColor(p.name)}">${avatarInitials(p.name)}</div>
+      <div class="player-name-wrap">
+        <div class="player-name">${p.name}${isMe?' (Вы)':''}</div>
+        <div class="player-role-badge">${roleShow}</div>
+        ${voteCount>0&&room.phase==='vote'?`<div class="vote-bar-wrap"><div class="vote-bar-fill" style="width:${voteCount/maxVotes*100}%"></div></div>`:''}
+      </div>
+      <div class="player-status">
+        ${voteCount>0?`<span class="vote-count">${voteCount}</span>`:''}
+        ${!p.alive?'<span class="skull">💀</span>':''}
+        ${p.id===room.nightTarget?'🎯':''}
+        ${p.id===room.savedPlayer?'🛡️':''}
+      </div>`;
+    area.appendChild(card);
+  });
+
+  // Action buttons
+  renderActions(room);
+}
+
+function getHostMessage(room) {
+  const phase = room.phase;
+  const round = room.round;
+  if(phase==='night') return `<strong>🌙 Ночь ${round}:</strong> Город спит... Мафия выбирает жертву. Доктор лечит. Детектив проверяет.`;
+  if(phase==='day') {
+    if(room.eliminated) return `<strong>☀️ Утро:</strong> Город обнаружил жертву — <span style="color:var(--blood2)">${room.eliminated}</span>. Обсуждайте и ищите мафию!`;
+    if(room.savedLastNight) return `<strong>☀️ Утро:</strong> Этой ночью никто не погиб — доктор спас жертву! Обсуждайте!`;
+    return `<strong>☀️ День ${round}:</strong> Обсуждайте и голосуйте за подозреваемого!`;
+  }
+  if(phase==='vote') return `<strong>⚖️ Голосование:</strong> Кто мафиози? Выберите игрока и нажмите "Голосовать"!`;
+  return 'Игра продолжается...';
+}
+
+function renderActions(room) {
+  const me = room.players?.[myId];
+  if(!me || !me.alive) {
+    document.getElementById('actionTitle').textContent = 'Вы выбыли — наблюдайте';
+    document.getElementById('actionBtns').innerHTML = '';
+    return;
+  }
+
+  const btns = document.getElementById('actionBtns');
+  btns.innerHTML = '';
+
+  if(room.phase === 'night') {
+    document.getElementById('actionTitle').textContent = 'Ночное действие';
+    if(['mafia','don'].includes(me.role)) {
+      addActionBtn(btns,'🔫 Убить',['ab-red',selectedPlayer?'':'ab-disabled'],()=>nightAction('kill'));
+    }
+    if(me.role === 'doctor') {
+      addActionBtn(btns,'💊 Спасти',['ab-green',selectedPlayer?'':'ab-disabled'],()=>nightAction('save'));
+    }
+    if(me.role === 'detective' || me.role === 'don') {
+      addActionBtn(btns,me.role==='detective'?'🔍 Проверить':'👁️ Проверить',['ab-blue',selectedPlayer?'':'ab-disabled'],()=>nightAction('check'));
+    }
+    if(room.host===myId || room.hostMode==='auto') {
+      addActionBtn(btns,'⏭️ Конец ночи',['ab-gold'],()=>endNight());
+    }
+  } else if(room.phase === 'day') {
+    document.getElementById('actionTitle').textContent = 'День — обсуждение';
+    if(room.host===myId || room.hostMode==='auto') {
+      addActionBtn(btns,'🗳️ Начать голосование',['ab-gold'],()=>startVote());
+    }
+  } else if(room.phase === 'vote') {
+    document.getElementById('actionTitle').textContent = 'Голосование';
+    const hasVoted = room.votes?.[myId];
+    addActionBtn(btns,'🗳️ Голосовать',['ab-red',selectedPlayer&&!hasVoted?'':'ab-disabled'],()=>vote());
+    if(room.host===myId || room.hostMode==='auto') {
+      addActionBtn(btns,'✅ Завершить голосование',['ab-gold'],()=>endVote());
+    }
+  }
+}
+
+function addActionBtn(container, label, classes, onclick) {
+  const btn = document.createElement('button');
+  btn.className = 'action-btn ' + classes.join(' ');
+  btn.textContent = label;
+  btn.onclick = onclick;
+  container.appendChild(btn);
+}
+
+function selectPlayer(id) {
+  if(id === selectedPlayer) { selectedPlayer = null; }
+  else { selectedPlayer = id; }
+  if(gameState) renderGame(gameState);
+}
+
+// ═══════════════════════════════════════════════
+// GAME ACTIONS
+// ═══════════════════════════════════════════════
+async function nightAction(type) {
+  if(!selectedPlayer) return;
+  const target = selectedPlayer;
+  const room = gameState || localRoom;
+  const me = room.players?.[myId];
+
+  if(type === 'kill' && ['mafia','don'].includes(me.role)) {
+    await updateRoom({nightTarget: target});
+    toast('Цель выбрана!','ok');
+    addLog(`🎯 Мафия выбрала цель`, 'system');
+  }
+  if(type === 'save' && me.role === 'doctor') {
+    await updateRoom({savedPlayer: target});
+    toast('Игрок под защитой!','ok');
+    addLog(`🛡️ Доктор лечит игрока`, 'save');
+  }
+  if(type === 'check') {
+    const targetPlayer = room.players?.[target];
+    if(targetPlayer) {
+      const isMafia = ['mafia','don'].includes(targetPlayer.role);
+      const msg = `🔍 ${targetPlayer.name} — ${isMafia?'МАФИЯ! 🔴':'Мирный ✅'}`;
+      toast(msg, isMafia?'err':'ok');
+      addLog(msg, isMafia?'kill':'save');
+    }
+  }
+  selectedPlayer = null;
+}
+
+async function endNight() {
+  const room = gameState || localRoom;
+  const players = room.players || {};
+  let eliminated = null;
+  let savedName = null;
+
+  if(room.nightTarget && room.nightTarget !== room.savedPlayer) {
+    eliminated = room.nightTarget;
+  } else if(room.nightTarget && room.nightTarget === room.savedPlayer) {
+    savedName = players[room.savedPlayer]?.name;
+  }
+
+  const updates = {
+    phase: 'day',
+    eliminated: eliminated ? players[eliminated]?.name : null,
+    savedLastNight: !!savedName,
+    nightTarget: null,
+    savedPlayer: null,
+    votes: {},
+    hostAnnouncement: eliminated
+      ? `<strong>☀️ Утро:</strong> Город обнаружил тело — <span style="color:var(--blood2)">${players[eliminated]?.name} убит!</span>`
+      : `<strong>☀️ Утро:</strong> Этой ночью никто не погиб! ${savedName?`Доктор спас ${savedName}!`:''}`,
+  };
+
+  if(eliminated) {
+    updates[`players/${eliminated}/alive`] = false;
+    addLog(`💀 ${players[eliminated]?.name} найден мёртвым`, 'kill');
+    speak(`Внимание! ${players[eliminated]?.name} был убит мафией этой ночью.`);
+  } else {
+    addLog(`🛡️ Никто не погиб этой ночью`, 'save');
+    speak('Удивительно! Этой ночью никто не погиб.');
+  }
+
+  await updateRoom(updates);
+
+  // Check win condition
+  setTimeout(() => checkWin(), 500);
+}
+
+async function startVote() {
+  speak('Начинается голосование! Выберите того, кто, по вашему мнению, является мафиози.');
+  await updateRoom({phase:'vote', votes:{}, hostAnnouncement:'<strong>⚖️ Голосование:</strong> Кто мафиози? Выберите игрока!'});
+}
+
+async function vote() {
+  if(!selectedPlayer) return;
+  const updates = {};
+  updates[`votes/${myId}`] = selectedPlayer;
+  await updateRoom(updates);
+  toast('Голос принят!','ok');
+  addLog(`🗳️ ${myName} проголосовал`, 'system');
+  selectedPlayer = null;
+}
+
+async function endVote() {
+  const room = gameState || localRoom;
+  const votes = room.votes || {};
+  const players = room.players || {};
+
+  // Count votes
+  const voteCount = {};
+  Object.values(votes).forEach(v => { voteCount[v] = (voteCount[v]||0)+1; });
+
+  let maxV = 0, executed = null;
+  for(let [pid, count] of Object.entries(voteCount)) {
+    if(count > maxV) { maxV = count; executed = pid; }
+  }
+
+  const updates = { phase:'day', round: (room.round||1)+1, votes:{} };
+  let announcement = '';
+
+  if(executed && players[executed]) {
+    updates[`players/${executed}/alive`] = false;
+    const pname = players[executed].name;
+    const prole = players[executed].role;
+    announcement = `<strong>⚖️ Решение принято:</strong> <span style="color:var(--blood2)">${pname} казнён!</span> Его роль: <span style="color:${ROLE_CONFIGS[prole].color}">${ROLE_CONFIGS[prole].icon} ${ROLE_CONFIGS[prole].name}</span>`;
+    addLog(`⚖️ ${pname} казнён городом`, 'kill');
+    speak(`Городской совет принял решение. ${pname} казнён. Его роль — ${ROLE_CONFIGS[prole].name}.`);
+  } else {
+    announcement = `<strong>⚖️ Голосование:</strong> Нет единого мнения. Никто не казнён.`;
+    addLog(`⚖️ Голосование не дало результата`, 'system');
+    speak('Голосование не определило виновного. Никто не казнён.');
+  }
+
+  updates.hostAnnouncement = announcement;
+  updates.phase = 'night';
+  updates.hostAnnouncement = announcement + ' <em style="color:var(--muted)">— Наступает ночь...</em>';
+
+  await updateRoom(updates);
+  setTimeout(() => checkWin(), 600);
+}
+
+function checkWin() {
+  const room = gameState || localRoom;
+  const players = Object.values(room.players||{}).filter(p=>p.alive);
+  const mafias = players.filter(p=>['mafia','don'].includes(p.role));
+  const civilians = players.filter(p=>!['mafia','don'].includes(p.role));
+
+  if(mafias.length === 0) {
+    endGame('civilians');
+  } else if(mafias.length >= civilians.length) {
+    endGame('mafia');
+  }
+}
+
+async function endGame(winner) {
+  const room = gameState || localRoom;
+  await updateRoom({status:'finished', winner});
+}
+
+async function updateRoom(updates) {
+  if(firebaseReady && db) {
+    await db.ref('rooms/'+roomCode).update(updates);
+  } else {
+    for(let [k,v] of Object.entries(updates)) {
+      const keys = k.split('/');
+      let cur = localRoom;
+      for(let i=0;i<keys.length-1;i++) {
+        if(!cur[keys[i]]) cur[keys[i]] = {};
+        cur = cur[keys[i]];
+      }
+      cur[keys[keys.length-1]] = v;
+    }
+    notifyListeners();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AUTO HOST
+// ═══════════════════════════════════════════════
+function runAutoHost(room) {
+  if(room.host !== myId) return;
+  if(room.phase === 'night') {
+    // Auto advance night after 30s
+    speak(`Наступает ночь ${room.round}. Город засыпает. Мафия, откройте глаза и выберите жертву.`);
+    setTimeout(() => {
+      if((gameState||localRoom)?.phase === 'night') {
+        speak('Мафия, закройте глаза. Детектив, откройте глаза.');
+        setTimeout(() => {
+          if((gameState||localRoom)?.phase === 'night') endNight();
+        }, 10000);
+      }
+    }, 25000);
+  }
+  if(room.phase === 'day') {
+    speak('Открывайте глаза! Город просыпается. Начинается обсуждение.');
+    setTimeout(() => {
+      if((gameState||localRoom)?.phase === 'day') startVote();
+    }, 30000);
+  }
+  if(room.phase === 'vote') {
+    setTimeout(() => {
+      if((gameState||localRoom)?.phase === 'vote') endVote();
+    }, 20000);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RESULT SCREEN
+// ═══════════════════════════════════════════════
+function showResult(room) {
+  const winner = room.winner;
+  const players = Object.values(room.players||{});
+  const isWinner = winner === 'mafia'
+    ? ['mafia','don'].includes(room.players?.[myId]?.role)
+    : !['mafia','don'].includes(room.players?.[myId]?.role);
+
+  document.getElementById('rTrophy').textContent = winner==='mafia'?'🔫':'🏙️';
+  document.getElementById('rTitle').textContent = winner==='mafia'?'Мафия победила!':'Город победил!';
+  document.getElementById('rSub').textContent = winner==='mafia'
+    ? 'Мафия захватила контроль над городом...'
+    : 'Город разоблачил и победил мафию!';
+
+  const list = document.getElementById('rPlayers');
+  list.innerHTML = '';
+  players.forEach(p => {
+    const cfg = ROLE_CONFIGS[p.role]||ROLE_CONFIGS.civilian;
+    const row = document.createElement('div');
+    row.className = 'winner-row';
+    row.innerHTML = `
+      <div class="player-av" style="background:${avatarColor(p.name)}">${avatarInitials(p.name)}</div>
+      <div style="flex:1">
+        <div style="font-size:.88rem;font-weight:600">${p.name}</div>
+        <div style="font-size:11px;color:${cfg.color}">${cfg.icon} ${cfg.name}</div>
+      </div>
+      <div style="font-size:18px">${p.alive?'✅':'💀'}</div>`;
+    list.appendChild(row);
+  });
+
+  speak(winner==='mafia'?'Мафия победила! Тёмные силы захватили город.':'Победа! Город разоблачил преступников и победил мафию!');
+  go('sResult');
+}
+
+async function playAgain() {
+  const room = gameState || localRoom;
+  if(room?.host === myId) {
+    await updateRoom({status:'lobby', phase:'lobby', round:0, players: Object.fromEntries(
+      Object.entries(room.players||{}).map(([id,p])=>[id,{...p,alive:true,ready:false,role:null}])
+    ), winner:null, eliminated:null, nightTarget:null, savedPlayer:null, votes:{}});
+  } else {
+    go('sLobby');
+  }
+}
+
+async function leaveRoom() {
+  if(firebaseReady && db && roomCode) {
+    await db.ref('rooms/'+roomCode+'/players/'+myId).remove();
+  } else {
+    if(localRoom?.players) delete localRoom.players[myId];
+    localListeners = [];
+  }
+  roomCode = '';
+  gameState = null;
+  selectedPlayer = null;
+  document.getElementById('roomBadge').style.display = 'none';
+  document.getElementById('micBtn').style.display = 'none';
+  go('sHome');
+}
+
+// ═══════════════════════════════════════════════
+// SPEECH (Text-to-Speech)
+// ═══════════════════════════════════════════════
+function speak(text) {
+  if(!speechSynth) return;
+  speechSynth.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ru-RU';
+  utter.rate = 0.9;
+  utter.pitch = 0.85;
+  utter.volume = 0.9;
+
+  const hostAvatar = document.querySelector('.host-avatar');
+  utter.onstart = () => { if(hostAvatar) hostAvatar.style.animation='hostPulse 0.8s infinite'; isSpeaking=true; };
+  utter.onend = () => { if(hostAvatar) hostAvatar.style.animation=''; isSpeaking=false; };
+
+  // Try to find Russian voice
+  const voices = speechSynth.getVoices();
+  const ruVoice = voices.find(v=>v.lang.startsWith('ru'));
+  if(ruVoice) utter.voice = ruVoice;
+
+  speechSynth.speak(utter);
+}
+
+// ═══════════════════════════════════════════════
+// MICROPHONE
+// ═══════════════════════════════════════════════
+async function toggleMic() {
+  const btn = document.getElementById('micBtn');
+  if(micStream) {
+    micStream.getTracks().forEach(t=>t.stop());
+    micStream = null;
+    btn.classList.remove('on');
+    btn.classList.add('off');
+    toast('Микрофон выключен','info');
+  } else {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+      btn.classList.remove('off');
+      btn.classList.add('on');
+      toast('Микрофон включён 🎤','ok');
+    } catch(e) {
+      toast('Нет доступа к микрофону','err');
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// GAME LOG
+// ═══════════════════════════════════════════════
+function addLog(msg, type='') {
+  const log = document.getElementById('gameLog');
+  const div = document.createElement('div');
+  div.className = 'log-entry log-' + (type||'');
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  if(log.children.length > 30) log.children[0].remove();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+// Load voices when ready
+if(speechSynth) {
+  speechSynth.onvoiceschanged = () => speechSynth.getVoices();
+  setTimeout(() => speechSynth.getVoices(), 100);
+}
+
+// Show mic button when in game
+const origGo = go;
+window.go = function(id) {
+  origGo(id);
+  const micBtn = document.getElementById('micBtn');
+  if(id === 'sGame') {
+    micBtn.style.display = 'flex';
+  } else if(id === 'sHome') {
+    micBtn.style.display = 'none';
+  }
+};
+
+// Handle room updates triggering auto-host
+const origHandleRoomUpdate = handleRoomUpdate;
+window.handleRoomUpdate = function(room) {
+  origHandleRoomUpdate(room);
+  if(room.status==='playing' && room.host===myId && room.hostMode==='auto') {
+    // Auto-host reacts to phase changes
+  }
+};
+
+console.log('🌙 Мафия загружена! Player ID:', myId);
+console.log('📌 Для полного мультиплеера настройте Firebase в конфиге вверху файла.');
 </script>
 </body>
 </html>
