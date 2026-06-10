@@ -474,6 +474,7 @@ function onData(msg){
         gs=room;
         broadcast(room);
         toast(msg.name+' подключился!','tok');
+        renderLobby(); // update host's own lobby view
       }
       break;
 
@@ -574,9 +575,15 @@ async function joinRoom(){
     showErr('jErr','Ошибка подключения.'); return;
   }
   btn.disabled=false; btn.textContent='Войти';
+  // Show waiting screen — actual lobby renders when host sends back state
+  document.getElementById('lobbyCode').textContent=roomCode;
+  document.getElementById('lobbyTitle').textContent='Подключаемся...';
+  document.getElementById('slots').innerHTML='<div class="info-txt">Ожидаем ответа хоста...</div>';
+  document.getElementById('startArea').innerHTML='';
+  document.getElementById('lobbyInfo').textContent='';
+  go('sLobby');
   // Send hello to host
   emit({type:'hello', id:ME, name:myName});
-  showLobby();
 }
 
 // ══════════════════════════════════════════════════
@@ -635,7 +642,22 @@ function applyState(room){
 
   const cur=document.querySelector('.screen.active')?.id;
 
-  if(room.status==='lobby'){ if(cur==='sLobby') renderLobby(); return; }
+  if(room.status==='lobby'){
+    gs=room;
+    // Guests: find own ID in players list
+    if(!isHost){
+      for(const[k,v] of Object.entries(room.players||{})){
+        // match by name since guest doesn't know their confirmed ID yet
+        // actually ME is already set — just ensure we're on lobby screen
+      }
+    }
+    const cur2=document.querySelector('.screen.active')?.id;
+    if(cur2!=='sLobby') go('sLobby');
+    document.getElementById('lobbyCode').textContent=roomCode;
+    document.getElementById('lobbyTitle').textContent=isHost?'Комната создана 🎲':'Ждём начала...';
+    renderLobby();
+    return;
+  }
   if(room.status==='finished'){ stopTimer(); closeNight(); showResult(room); return; }
 
   if(room.status==='playing'){
