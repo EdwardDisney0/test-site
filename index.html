@@ -361,7 +361,6 @@ input::placeholder{color:rgba(239,239,239,.2)}
 
 <div id="toast"></div>
 
-<!-- Ably SDK -->
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
 // ══════════════════════════════════════════════════
@@ -370,18 +369,19 @@ input::placeholder{color:rgba(239,239,239,.2)}
 
 const ABLY_KEY = 'w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
 
-const ME = 'p' + Math.random().toString(36).slice(2,7);
+// ME is a stable random ID for this browser session
+const ME = 'p' + Math.random().toString(36).slice(2,9);
+
 let myName='', myRole=null, roomCode='', isHost=false;
 let gs=null;
 let selTarget=null;
 let nightPick=null;
-let readyCount_local=0;
+// roleRevealDone: true once this player clicked "Я готов"
+let roleRevealDone=false;
 let phaseTimer=null, timerSec=0, timerMax=60;
 let micStream=null, audioCtx=null, isTalking=false;
 let ttsEnabled=true;
-let voteReadySet=new Set();
 
-// Ably
 let ablyClient=null, ablyChannel=null;
 
 async function initAbly(){
@@ -397,7 +397,7 @@ async function initAbly(){
 function subscribeChannel(name){
   ablyChannel=ablyClient.channels.get(name);
   ablyChannel.subscribe('msg', msg=>{
-    try{ onData(JSON.parse(msg.data)); }catch(e){}
+    try{ onData(JSON.parse(msg.data)); }catch(e){ console.error(e); }
   });
 }
 
@@ -405,24 +405,25 @@ function emit(data){
   if(ablyChannel) ablyChannel.publish('msg', JSON.stringify(data));
 }
 
-// Broadcast full state to all players
+// Host always broadcasts full state — also applies locally since echoMessages:false
 function broadcast(room){
   gs=room;
   emit({type:'state', state:room});
+  // Host doesn't receive its own messages back (echoMessages:false), apply locally
+  if(isHost) setTimeout(()=>applyState(room),0);
 }
 
-// When host patches the state, rebroadcast
 function patch(obj){
-  if(!gs) return;
-  const m=merge(gs,obj);
-  gs=m;
-  broadcast(m);
+  if(!gs||!isHost) return;
+  gs=deepMerge(gs,obj);
+  broadcast(gs);
 }
 
-function merge(a,b){
+function deepMerge(a,b){
   const r={...a};
   for(const k in b){
-    if(b[k]&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object') r[k]=merge(a[k],b[k]);
+    if(b[k]!==null&&typeof b[k]==='object'&&!Array.isArray(b[k])&&a[k]&&typeof a[k]==='object')
+      r[k]=deepMerge(a[k],b[k]);
     else r[k]=b[k];
   }
   return r;
@@ -430,11 +431,11 @@ function merge(a,b){
 
 // ── ROLE CONFIGS ──
 const RC={
-  mafia:    {icon:'🔫',name:'Мафия',css:'rc-mafia',desc:'Ночью выбирайте жертву. Днём — притворяйтесь мирным горожанином!',color:'var(--blood2)',team:'mafia'},
-  don:      {icon:'👑',name:'Дон Мафии',css:'rc-don',desc:'Глава мафии. Ночью проверяете детектива и руководите убийством.',color:'var(--gold)',team:'mafia'},
+  mafia:    {icon:'🔫',name:'Мафия',css:'rc-mafia',desc:'Ночью выбирайте жертву. Днём — притворяйтесь мирным!',color:'var(--blood2)',team:'mafia'},
+  don:      {icon:'👑',name:'Дон Мафии',css:'rc-don',desc:'Глава мафии. Ночью руководите убийством.',color:'var(--gold)',team:'mafia'},
   detective:{icon:'🔍',name:'Детектив',css:'rc-det',desc:'Ночью проверяете одного игрока — мафия или нет.',color:'#74b9ff',team:'civil'},
-  doctor:   {icon:'💊',name:'Доктор',css:'rc-doc',desc:'Ночью даёте иммунитет одному игроку. Если мафия нападёт на него — он выживет.',color:'var(--civic2)',team:'civil'},
-  civilian: {icon:'👤',name:'Мирный',css:'rc-civ',desc:'Участвуйте в обсуждении, вычисляйте и голосуйте за мафию!',color:'#aaa',team:'civil'},
+  doctor:   {icon:'💊',name:'Доктор',css:'rc-doc',desc:'Ночью даёте иммунитет одному игроку.',color:'var(--civic2)',team:'civil'},
+  civilian: {icon:'👤',name:'Мирный',css:'rc-civ',desc:'Участвуйте в обсуждении, вычисляйте мафию!',color:'#aaa',team:'civil'},
 };
 const RDIST={
   5:['mafia','detective','civilian','civilian','civilian'],
@@ -451,8 +452,8 @@ function showErr(id,m){ const e=document.getElementById(id); e.textContent=m; e.
 function hideErr(id){ document.getElementById(id).style.display='none'; }
 let _tt; function toast(m,t='tinfo'){ const e=document.getElementById('toast'); e.textContent=m; e.className='show '+t; clearTimeout(_tt); _tt=setTimeout(()=>e.classList.remove('show'),2800); }
 function avC(n){ const c=['#c0392b','#8e44ad','#2471a3','#1e8449','#d35400','#16a085','#e74c3c','#7f8c8d']; let h=0; for(let ch of n) h=(h*31+ch.charCodeAt(0))%c.length; return c[h]; }
-function inits(n){ return n.slice(0,2).toUpperCase(); }
-function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; }
+function inits(n){ return (n||'?').slice(0,2).toUpperCase(); }
+function shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]} return b; }
 function genCode(){ return String(Math.floor(1000+Math.random()*9000)); }
 function mkBtn(label,cls,fn,dis){ const b=document.createElement('button'); b.className='btn '+cls; b.textContent=label; if(dis)b.disabled=true; b.onclick=fn; return b; }
 
@@ -464,42 +465,55 @@ function mkBtn(label,cls,fn,dis){ const b=document.createElement('button'); b.cl
 // ══════════════════════════════════════════════════
 function onData(msg){
   switch(msg.type){
+
+    // ── HOST handles join requests ──
     case 'hello':
       if(!isHost) break;
       {
         const room=gs;
-        const taken=Object.keys(room.players||{}).length;
-        if(taken>=room.maxPlayers){ emit({type:'room_full'}); break; }
+        const count=Object.keys(room.players||{}).length;
+        if(count>=room.maxPlayers){
+          // tell just that client — we can't target in Ably pub/sub,
+          // so broadcast room_full to channel (guests ignore if already in)
+          emit({type:'room_full', to:msg.id}); break;
+        }
+        if(room.players[msg.id]) break; // already joined
         room.players[msg.id]={id:msg.id,name:msg.name,alive:true,isHost:false,immune:false,joined:Date.now()};
         gs=room;
         broadcast(room);
         toast(msg.name+' подключился!','tok');
-        renderLobby(); // update host's own lobby view
       }
       break;
 
     case 'room_full':
+      if(msg.to&&msg.to!==ME) break;
       toast('Комната заполнена!','terr'); go('sHome'); break;
 
+    // ── Full state from host ──
     case 'state':
       applyState(msg.state); break;
 
+    // ── Night actions ──
     case 'night_action':
       if(!isHost) break;
       handleNightAction(msg); break;
 
+    // ── Ready ──
     case 'mark_ready':
       if(!isHost) break;
       {
         const room=gs;
-        room.readyCount=(room.readyCount||0)+1;
-        if(room.readyCount>=Object.keys(room.players).length){
-          room.phase='intro'; room.readyCount=0;
+        room.readyPlayers=room.readyPlayers||[];
+        if(!room.readyPlayers.includes(msg.from)) room.readyPlayers.push(msg.from);
+        const total=Object.keys(room.players).length;
+        if(room.readyPlayers.length>=total){
+          room.phase='intro'; room.readyPlayers=[];
         }
         gs=room; broadcast(room);
       }
       break;
 
+    // ── Chat ──
     case 'chat':
       if(!isHost) break;
       {
@@ -511,6 +525,7 @@ function onData(msg){
       }
       break;
 
+    // ── Vote ──
     case 'vote':
       if(!isHost) break;
       {
@@ -522,6 +537,16 @@ function onData(msg){
         gs=room; broadcast(room);
         const alive=Object.values(room.players).filter(p=>p.alive);
         if(room.voteReady.length>=alive.length) setTimeout(()=>resolveVote(),800);
+      }
+      break;
+
+    // ── Speaking indicator ──
+    case 'speaking':
+      if(!isHost) break;
+      {
+        gs.speaking=gs.speaking||{};
+        gs.speaking[msg.id]=msg.val;
+        broadcast(gs);
       }
       break;
   }
@@ -546,13 +571,13 @@ async function createRoom(){
   }
   btn.disabled=false; btn.textContent='Создать';
   const room={
-    code:roomCode,host:ME,maxPlayers:parseInt(getV('szG')||'5'),timerSec:timerMax,
-    status:'lobby',phase:'lobby',round:1,
+    code:roomCode, host:ME, maxPlayers:parseInt(getV('szG')||'5'), timerSec:timerMax,
+    status:'lobby', phase:'lobby', round:1,
     players:{[ME]:{id:ME,name:myName,alive:true,isHost:true,immune:false,joined:Date.now()}},
-    nightTarget:null,immunePlayer:null,detCheck:null,
-    votes:{},voteReady:[],messages:[],
-    eliminated:null,savedLastNight:false,winner:null,readyCount:0,
-    speaking:{},nightCheckedRole:null,
+    nightTarget:null, immunePlayer:null,
+    votes:{}, voteReady:[], messages:[],
+    eliminated:null, savedLastNight:false, winner:null,
+    readyPlayers:[], speaking:{},
   };
   gs=room;
   showLobby();
@@ -575,15 +600,16 @@ async function joinRoom(){
     showErr('jErr','Ошибка подключения.'); return;
   }
   btn.disabled=false; btn.textContent='Войти';
-  // Show waiting screen — actual lobby renders when host sends back state
   document.getElementById('lobbyCode').textContent=roomCode;
   document.getElementById('lobbyTitle').textContent='Подключаемся...';
   document.getElementById('slots').innerHTML='<div class="info-txt">Ожидаем ответа хоста...</div>';
   document.getElementById('startArea').innerHTML='';
   document.getElementById('lobbyInfo').textContent='';
   go('sLobby');
-  // Send hello to host
+  // Send hello — retry a few times in case host isn't subscribed yet
   emit({type:'hello', id:ME, name:myName});
+  setTimeout(()=>{ if(gs&&gs.players&&gs.players[ME]) return; emit({type:'hello', id:ME, name:myName}); },1500);
+  setTimeout(()=>{ if(gs&&gs.players&&gs.players[ME]) return; emit({type:'hello', id:ME, name:myName}); },3500);
 }
 
 // ══════════════════════════════════════════════════
@@ -597,7 +623,7 @@ function showLobby(){
 
 function renderLobby(){
   const room=gs; if(!room) return;
-  const players=Object.values(room.players||{});
+  const players=Object.values(room.players||{}).sort((a,b)=>a.joined-b.joined);
   const s=document.getElementById('slots'); s.innerHTML='';
   for(let i=0;i<room.maxPlayers;i++){
     const p=players[i]; const d=document.createElement('div');
@@ -610,24 +636,39 @@ function renderLobby(){
   const sa=document.getElementById('startArea'),info=document.getElementById('lobbyInfo');
   const full=players.length>=room.maxPlayers;
   if(isHost){
-    sa.innerHTML=`<button class="btn b-blood bfull" ${full?'':'disabled'} onclick="startGame()">${full?'🎭 Начать игру!':'Ждём ('+players.length+'/'+room.maxPlayers+')'}</button>`;
+    sa.innerHTML='';
+    const startBtn=document.createElement('button');
+    startBtn.className='btn b-blood bfull';
+    startBtn.disabled=!full;
+    startBtn.textContent=full?'🎭 Начать игру!':'Ждём ('+players.length+'/'+room.maxPlayers+')';
+    startBtn.onclick=startGame;
+    sa.appendChild(startBtn);
     info.textContent=full?'Все собрались! Нажмите Начать.':'Нужно ещё '+(room.maxPlayers-players.length)+' игроков';
-  } else { sa.innerHTML=''; info.textContent='Ждём хоста... ('+players.length+'/'+room.maxPlayers+')'; }
+  } else {
+    sa.innerHTML='';
+    info.textContent='Ждём хоста... ('+players.length+'/'+room.maxPlayers+')';
+  }
 }
 
 // ══════════════════════════════════════════════════
-// START
+// START GAME
 // ══════════════════════════════════════════════════
 function startGame(){
+  if(!isHost) return;
   const room=gs;
-  const players=shuffle(Object.values(room.players||{}));
+  const players=Object.values(room.players||{});
   if(players.length<room.maxPlayers){ toast('Нужно больше игроков!','terr'); return; }
   const roles=shuffle([...(RDIST[room.maxPlayers]||RDIST[5])]);
+  const sortedPlayers=players.sort((a,b)=>a.joined-b.joined);
   const upd={};
-  players.forEach((p,i)=>{ upd[p.id]={...p,role:roles[i],alive:true,immune:false}; });
-  const ns={...room,status:'playing',phase:'roleReveal',players:upd,readyCount:0,round:1,
-    nightTarget:null,immunePlayer:null,detCheck:null,votes:{},voteReady:[],messages:[],
-    eliminated:null,savedLastNight:false,winner:null,nightCheckedRole:null,speaking:{}};
+  sortedPlayers.forEach((p,i)=>{ upd[p.id]={...p,role:roles[i],alive:true,immune:false}; });
+  const ns={...room,
+    status:'playing', phase:'roleReveal', players:upd, round:1,
+    nightTarget:null, immunePlayer:null,
+    votes:{}, voteReady:[], messages:[],
+    eliminated:null, savedLastNight:false, winner:null,
+    readyPlayers:[], speaking:{},
+  };
   gs=ns; broadcast(ns);
 }
 
@@ -635,35 +676,34 @@ function startGame(){
 // STATE HANDLER
 // ══════════════════════════════════════════════════
 let prevPhase='';
+
 function applyState(room){
   if(!room) return;
   gs=room;
   timerMax=room.timerSec||60;
 
-  const cur=document.querySelector('.screen.active')?.id;
-
   if(room.status==='lobby'){
-    gs=room;
-    // Guests: find own ID in players list
-    if(!isHost){
-      for(const[k,v] of Object.entries(room.players||{})){
-        // match by name since guest doesn't know their confirmed ID yet
-        // actually ME is already set — just ensure we're on lobby screen
-      }
-    }
-    const cur2=document.querySelector('.screen.active')?.id;
-    if(cur2!=='sLobby') go('sLobby');
-    document.getElementById('lobbyCode').textContent=roomCode;
+    const cur=document.querySelector('.screen.active')?.id;
+    if(cur!=='sLobby') go('sLobby');
+    document.getElementById('lobbyCode').textContent=roomCode||room.code||'';
     document.getElementById('lobbyTitle').textContent=isHost?'Комната создана 🎲':'Ждём начала...';
     renderLobby();
     return;
   }
-  if(room.status==='finished'){ stopTimer(); closeNight(); showResult(room); return; }
+
+  if(room.status==='finished'){
+    stopTimer(); closeNight(); showResult(room); return;
+  }
 
   if(room.status==='playing'){
-    if(room.phase==='roleReveal'){ if(cur!=='sRole') showRoleReveal(room); return; }
+    // Role reveal phase
+    if(room.phase==='roleReveal'){
+      if(!roleRevealDone) showRoleReveal(room);
+      return;
+    }
 
-    if(cur==='sRole'&&!readyCount_local) return;
+    // Ensure we're on the game screen
+    const cur=document.querySelector('.screen.active')?.id;
     if(cur!=='sGame') go('sGame');
 
     renderGame(room);
@@ -689,38 +729,46 @@ function applyState(room){
 // ROLE REVEAL
 // ══════════════════════════════════════════════════
 function showRoleReveal(room){
-  const me=room.players[ME]; if(!me) return;
+  const me=room.players[ME];
+  if(!me) return;
   myRole=me.role;
   const cfg=RC[myRole]||RC.civilian;
   document.getElementById('roleCard').className='rcard '+cfg.css;
   document.getElementById('rIcon').textContent=cfg.icon;
   document.getElementById('rName').textContent=cfg.name;
   document.getElementById('rDesc').textContent=cfg.desc;
+  // Show mafia teammates
   const mt=['mafia','don'];
+  const mw=document.getElementById('mTeamWrap');
+  mw.style.display='none';
   if(mt.includes(myRole)){
     const mates=Object.values(room.players).filter(p=>p.id!==ME&&mt.includes(p.role));
-    if(mates.length){ document.getElementById('mTeamWrap').style.display='block'; document.getElementById('mChips').innerHTML=mates.map(p=>`<span class="mchip">${RC[p.role].icon} ${p.name}</span>`).join(''); }
+    if(mates.length){
+      mw.style.display='block';
+      document.getElementById('mChips').innerHTML=mates.map(p=>`<span class="mchip">${RC[p.role].icon} ${p.name}</span>`).join('');
+    }
   }
-  readyCount_local=0;
   go('sRole');
   speak(`Ваша роль — ${cfg.name}. ${cfg.desc}`);
 }
 
 function markReady(){
-  readyCount_local=1;
+  roleRevealDone=true;
   if(isHost){
-    // Host applies directly
     const room=gs;
-    room.readyCount=(room.readyCount||0)+1;
-    if(room.readyCount>=Object.keys(room.players).length){
-      room.phase='intro'; room.readyCount=0;
+    room.readyPlayers=room.readyPlayers||[];
+    if(!room.readyPlayers.includes(ME)) room.readyPlayers.push(ME);
+    const total=Object.keys(room.players).length;
+    if(room.readyPlayers.length>=total){
+      room.phase='intro'; room.readyPlayers=[];
     }
     gs=room; broadcast(room);
   } else {
     emit({type:'mark_ready', from:ME});
   }
+  // Move to game screen immediately; renderGame/onPhaseEnter will follow via applyState
   go('sGame');
-  if(gs) renderGame(gs);
+  if(gs&&gs.phase!=='roleReveal') renderGame(gs);
 }
 
 // ══════════════════════════════════════════════════
@@ -732,7 +780,7 @@ function onPhaseEnter(room){
 
   if(room.phase==='intro'){
     hostSay(`<strong>🌿 Знакомство!</strong> Представьтесь городу. У вас <strong>${tSec} секунд</strong>.`);
-    speak(`Начинается знакомство! Каждый игрок должен представиться. У вас ${tSec} секунд.`);
+    speak(`Начинается знакомство. У вас ${tSec} секунд.`);
     setChatBlocked(false);
     startTimer(tSec,()=>{
       speak('Знакомство завершено. Наступает первая ночь!');
@@ -753,7 +801,7 @@ function onPhaseEnter(room){
     clearNightAuto();
     openNightOverlay(room,'night_mafia');
     const me=room.players[ME];
-    if(['mafia','don'].includes(me?.role)&&me?.alive) speak('Мафия, просыпайтесь. Выберите жертву.');
+    if(me&&me.alive&&['mafia','don'].includes(me.role)) speak('Мафия, просыпайтесь. Выберите жертву.');
     else speak('Мафия просыпается и делает выбор.');
     if(isHost) scheduleNightAuto(30,()=>advanceNight('night_mafia'));
   }
@@ -773,14 +821,14 @@ function onPhaseEnter(room){
     setTimeout(()=>{
       if(room.eliminated){
         showSplash('🔫',`${room.eliminated} убит!`);
-        hostSay(`<span class="hr">☀️ Тело найдено!</span> Этой ночью убит <span class="hr">${room.eliminated}</span>. Обсуждение через 3 сек...`);
+        hostSay(`<span class="hr">☀️ Тело найдено!</span> Убит <span class="hr">${room.eliminated}</span>. Обсуждение через 3 сек...`);
         speak(`Этой ночью был убит ${room.eliminated}.`);
       } else if(room.savedLastNight){
         showSplash('🛡️','Доктор спас жертву!');
-        hostSay(`<span class="hg">☀️ Доктор спас жертву!</span> Никто не погиб. Обсуждение через 3 сек...`);
-        speak('Этой ночью никто не погиб. Доктор успел спасти жертву!');
+        hostSay(`<span class="hg">☀️ Доктор спас!</span> Никто не погиб.`);
+        speak('Доктор успел спасти жертву! Никто не погиб.');
       } else {
-        hostSay(`<span class="hg">☀️ Спокойная ночь.</span> Никто не погиб. Обсуждение через 3 сек...`);
+        hostSay(`<span class="hg">☀️ Спокойная ночь.</span> Никто не погиб.`);
         speak('Спокойная ночь. Никто не пострадал.');
       }
       if(isHost) setTimeout(()=>patch({phase:'day'}),3000);
@@ -789,16 +837,16 @@ function onPhaseEnter(room){
   else if(room.phase==='day'){
     const tDay=room.timerSec||60;
     setChatBlocked(false);
-    hostSay(`<strong>☀️ День ${room.round}.</strong> Обсуждайте, ищите мафию! <strong>${tDay} сек.</strong>`);
-    speak(`День ${room.round}. Обсуждение началось. У вас ${tDay} секунд.`);
+    hostSay(`<strong>☀️ День ${room.round}.</strong> Обсуждайте! <strong>${tDay} сек.</strong>`);
+    speak(`День ${room.round}. Обсуждение началось. ${tDay} секунд.`);
     startTimer(tDay,()=>{
-      speak('Время вышло! Начинается голосование.');
+      speak('Время вышло! Голосование.');
       if(isHost) patch({phase:'vote',votes:{},voteReady:[]});
     });
   }
   else if(room.phase==='vote'){
     selTarget=null;
-    hostSay(`<strong>⚖️ Голосование!</strong> Кликните на игрока → <strong>Голосовать</strong> или <strong>Пропустить</strong>.`);
+    hostSay(`<strong>⚖️ Голосование!</strong> Кликните на игрока, затем <strong>Голосовать</strong> или <strong>Пропустить</strong>.`);
     speak('Голосование! Выберите подозреваемого или пропустите.');
     if(isHost) startTimer(30,()=>resolveVote());
   }
@@ -853,7 +901,7 @@ function renderTable(room){
   const players=Object.values(room.players||{}).sort((a,b)=>a.joined-b.joined);
   const R=tt.offsetWidth/2;
   const sr=R+56;
-  const n=players.length;
+  const n=players.length; if(!n) return;
   const votes=room.votes||{};
   const me=room.players[ME];
   const maf=['mafia','don'];
@@ -877,7 +925,7 @@ function renderTable(room){
       +(isSel?' s-sel':'')
       +(isIm&&p.alive?' s-immune':'')
       +(vc>0?' s-vote':'')
-      +((!p.alive||isMe)?' s-nocursor':'');
+      +((!p.alive||isMe||(room.phase!=='vote'&&room.phase!=='day'))?' s-nocursor':'');
     seat.style.cssText=`left:${x}px;top:${y}px;transform:translate(-50%,-50%)`;
     if(p.alive&&!isMe&&(isVote||isDay)) seat.onclick=()=>clickSeat(p.id,room);
 
@@ -910,7 +958,7 @@ function renderActions(room){
   if(!me) return;
 
   if(!me.alive){
-    row.innerHTML='<span style="font-size:10px;color:var(--mu)">💀 Вы выбыли — наблюдайте молча</span>';
+    row.innerHTML='<span style="font-size:10px;color:var(--mu)">💀 Вы выбыли — наблюдайте</span>';
     return;
   }
 
@@ -921,17 +969,17 @@ function renderActions(room){
       row.appendChild(mkBtn('🗳️ Голосовать','b-blood',doVote,!selTarget));
       row.appendChild(mkBtn('⏭️ Пропустить','b-gh',doSkipVote));
     } else {
-      row.innerHTML='<span style="font-size:10px;color:var(--civic2)">✅ Готово — ждём остальных</span>';
+      row.innerHTML='<span style="font-size:10px;color:var(--civic2)">✅ Проголосовали — ждём остальных</span>';
     }
-    if(isHost) row.appendChild(mkBtn('✅ Завершить','b-gold',resolveVote));
+    if(isHost) row.appendChild(mkBtn('✅ Завершить голосование','b-gold',resolveVote));
   }
 
   if(room.phase==='day'&&isHost){
-    row.appendChild(mkBtn('⚖️ Голосовать раньше','b-gold',()=>{ stopTimer(); patch({phase:'vote',votes:{},voteReady:[]}); }));
+    row.appendChild(mkBtn('⚖️ Начать голосование','b-gold',()=>{ stopTimer(); patch({phase:'vote',votes:{},voteReady:[]}); }));
   }
 
   if(['night_doctor','night_mafia','night_detective'].includes(room.phase)&&isHost){
-    row.appendChild(mkBtn('⏭️ Следующий шаг (хост)','b-gold',doNightNext));
+    row.appendChild(mkBtn('⏭️ След. шаг (хост)','b-gold',doNightNext));
   }
 }
 
@@ -939,19 +987,20 @@ function renderActions(room){
 // TIMER
 // ══════════════════════════════════════════════════
 function startTimer(sec,onEnd){
-  timerSec=sec; const fill=document.getElementById('timerFill');
-  fill.style.width='100%'; fill.className='timer-fill'; fill.style.transition='none';
+  timerSec=sec;
+  const fill=document.getElementById('timerFill');
+  fill.style.transition='none'; fill.style.width='100%'; fill.className='timer-fill';
   setTimeout(()=>{ fill.style.transition='width .5s linear,background .5s'; },50);
   clearInterval(phaseTimer);
   phaseTimer=setInterval(()=>{
     timerSec--;
-    const pct=timerSec/sec*100;
+    const pct=Math.max(0,timerSec/sec*100);
     fill.style.width=pct+'%';
     if(pct<30) fill.className='timer-fill warn';
     if(timerSec<=0){ clearInterval(phaseTimer); fill.style.width='0%'; onEnd(); }
   },1000);
 }
-function stopTimer(){ clearInterval(phaseTimer); }
+function stopTimer(){ clearInterval(phaseTimer); phaseTimer=null; }
 
 // ══════════════════════════════════════════════════
 // NIGHT OVERLAY
@@ -971,15 +1020,17 @@ function openNightOverlay(room,step){
 function closeNight(){
   document.getElementById('nightOverlay').classList.remove('show');
   currentNightStep='';
+  currentNightAction=null;
 }
 
-document.addEventListener('click',function(e){
-  const ov=document.getElementById('nightOverlay');
-  if(!ov||!ov.classList.contains('show')) return;
+// Delegated click handler on overlay
+document.getElementById('nightOverlay').addEventListener('click',function(e){
   const nc=document.getElementById('nContent');
-  if(!nc||!nc.contains(e.target)) return;
+  if(!nc) return;
+
+  // Target row click
   const row=e.target.closest('.trow[data-pid]');
-  if(row){
+  if(row&&nc.contains(row)){
     nightPick=row.dataset.pid;
     nc.querySelectorAll('.trow[data-pid]').forEach(r=>r.classList.remove('tsel-red','tsel-grn','tsel-blu'));
     const clsSel=currentNightStep==='night_mafia'?'tsel-red':currentNightStep==='night_doctor'?'tsel-grn':'tsel-blu';
@@ -988,8 +1039,14 @@ document.addEventListener('click',function(e){
     if(btn) btn.disabled=false;
     return;
   }
+
+  // Action button
   const abtn=e.target.closest('#nightActionBtn');
-  if(abtn&&!abtn.disabled&&currentNightAction) currentNightAction();
+  if(abtn&&!abtn.disabled&&currentNightAction){ currentNightAction(); return; }
+
+  // Host next button
+  const nbtn=e.target.closest('#nightNextBtn');
+  if(nbtn) doNightNext();
 });
 
 function renderNightContent(room,step){
@@ -1001,7 +1058,9 @@ function renderNightContent(room,step){
     const isDoc=alive&&me.role==='doctor';
     if(isDoc){
       currentNightAction=doNightDoc;
-      nc.innerHTML=buildNightUI('💊','Доктор просыпается','Выберите игрока — кому дать иммунитет?',buildTargets(room,false,false),step,'b-pur','💊 Дать иммунитет');
+      // Doctor can protect anyone including self
+      const targets=Object.values(room.players).filter(p=>p.alive);
+      nc.innerHTML=buildNightUI('💊','Доктор просыпается','Выберите игрока — кому дать иммунитет?',targets,step,'b-pur','💊 Дать иммунитет');
     } else {
       currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Доктор действует в тишине');
@@ -1011,7 +1070,10 @@ function renderNightContent(room,step){
     const isMaf=alive&&['mafia','don'].includes(me.role);
     if(isMaf){
       currentNightAction=doNightKill;
-      nc.innerHTML=buildNightUI('🔫','Мафия просыпается','Выберите жертву.',buildTargets(room,true,false),step,'b-blood','🔫 Убить');
+      // Mafia picks from non-mafia alive players
+      const maf=['mafia','don'];
+      const targets=Object.values(room.players).filter(p=>p.alive&&!maf.includes(p.role));
+      nc.innerHTML=buildNightUI('🔫','Мафия просыпается','Выберите жертву.',targets,step,'b-blood','🔫 Убить');
     } else {
       currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Мафия выбирает жертву');
@@ -1021,47 +1083,42 @@ function renderNightContent(room,step){
     const isDet=alive&&(me.role==='detective'||me.role==='don');
     if(isDet){
       currentNightAction=doNightDet;
-      nc.innerHTML=buildNightUI('🔍','Детектив просыпается','Проверьте одного игрока. Результат только вам.',buildTargets(room,false,true),step,'b-blue','🔍 Проверить');
+      // Detective checks anyone except themselves
+      const targets=Object.values(room.players).filter(p=>p.alive&&p.id!==ME);
+      nc.innerHTML=buildNightUI('🔍','Детектив просыпается','Проверьте одного игрока.',targets,step,'b-blue','🔍 Проверить');
     } else {
       currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Детектив расследует');
     }
   }
 
+  // Restore selection if any
   if(nightPick){
     const selRow=nc.querySelector(`.trow[data-pid="${nightPick}"]`);
     if(selRow){
       const clsSel=step==='night_mafia'?'tsel-red':step==='night_doctor'?'tsel-grn':'tsel-blu';
       selRow.classList.add(clsSel);
+      const btn=document.getElementById('nightActionBtn');
+      if(btn) btn.disabled=false;
     }
-    const btn=document.getElementById('nightActionBtn');
-    if(btn) btn.disabled=false;
   }
 }
 
 function sleepHTML(title,sub){
-  return `<div class="sleep-screen"><span class="sleep-icon">😴</span><div class="n-title" style="font-size:1.4rem">${title}</div><div class="n-sub">${sub}</div></div>`;
+  const hostBtn=isHost?`<div class="n-btns" style="margin-top:1rem"><button class="btn b-gold" id="nightNextBtn">⏭️ Далее (хост)</button></div>`:'';
+  return `<div class="sleep-screen"><span class="sleep-icon">😴</span><div class="n-title" style="font-size:1.4rem">${title}</div><div class="n-sub">${sub}</div>${hostBtn}</div>`;
 }
 
 function buildNightUI(icon,title,sub,targets,step,btnCls,btnLabel){
   let html=`<span class="n-icon">${icon}</span><div class="n-title">${title}</div><div class="n-sub">${sub}</div><div class="tlist">`;
-  targets.forEach(p=>{ html+=`<div class="trow" data-pid="${p.id}"><div class="tav" style="background:${avC(p.name)}">${inits(p.name)}</div><div class="tname">${p.name}</div><div class="tinfo">${p.immune?'🛡️ иммунитет':''}</div></div>`; });
+  targets.forEach(p=>{
+    html+=`<div class="trow" data-pid="${p.id}"><div class="tav" style="background:${avC(p.name)}">${inits(p.name)}</div><div class="tname">${p.name}</div><div class="tinfo">${p.immune?'🛡️ иммунитет':''}</div></div>`;
+  });
   html+=`</div><div class="n-btns">`;
   html+=`<button class="btn ${btnCls}" id="nightActionBtn" disabled>${btnLabel}</button>`;
-  if(isHost) html+=`<button class="btn b-gold" onclick="doNightNext()">⏭️ Далее (хост)</button>`;
+  if(isHost) html+=`<button class="btn b-gold" id="nightNextBtn">⏭️ Далее (хост)</button>`;
   html+=`</div>`;
   return html;
-}
-
-function buildTargets(room,excludeMaf=false,excludeSelf=false){
-  const maf=['mafia','don'];
-  return Object.values(room.players).filter(p=>{
-    if(!p.alive) return false;
-    if(excludeSelf&&p.id===ME) return false;
-    if(excludeMaf&&maf.includes(p.role)) return false;
-    if(!excludeMaf&&p.id===ME) return false;
-    return true;
-  });
 }
 
 // ══════════════════════════════════════════════════
@@ -1071,13 +1128,13 @@ let nightAutoTimer=null;
 function clearNightAuto(){ clearTimeout(nightAutoTimer); nightAutoTimer=null; }
 function scheduleNightAuto(sec,fn){ clearNightAuto(); nightAutoTimer=setTimeout(fn,sec*1000); }
 
-// Night actions are sent to host, host applies and broadcasts
+// Host handles all night_action messages
 function handleNightAction(msg){
-  // Only host handles this
+  if(!isHost) return;
   const room=gs; if(!room) return;
   if(msg.action==='doc'&&msg.target){
     room.immunePlayer=msg.target;
-    room.players[msg.target].immune=true;
+    if(room.players[msg.target]) room.players[msg.target].immune=true;
     gs=room; broadcast(room);
     clearNightAuto();
     setTimeout(()=>advanceNight('night_doctor'),600);
@@ -1088,8 +1145,7 @@ function handleNightAction(msg){
     clearNightAuto();
     setTimeout(()=>advanceNight('night_mafia'),600);
   }
-  else if(msg.action==='det'&&msg.target){
-    // det result stored privately, advance night
+  else if(msg.action==='det'){
     clearNightAuto();
     setTimeout(()=>advanceNight('night_detective'),800);
   }
@@ -1098,6 +1154,7 @@ function handleNightAction(msg){
 function advanceNight(fromPhase){
   if(!isHost) return;
   const room=gs; if(!room||room.phase!==fromPhase) return;
+  clearNightAuto();
   if(fromPhase==='night_doctor'){
     room.phase='night_mafia'; gs=room; broadcast(room);
   } else if(fromPhase==='night_mafia'){
@@ -1115,7 +1172,7 @@ function doNightDoc(){
   if(isHost){
     const room=gs;
     room.immunePlayer=nightPick;
-    room.players[nightPick].immune=true;
+    if(room.players[nightPick]) room.players[nightPick].immune=true;
     gs=room; broadcast(room);
     clearNightAuto();
     setTimeout(()=>advanceNight('night_doctor'),600);
@@ -1149,9 +1206,9 @@ function doNightDet(){
   if(!target) return;
   const maf=['mafia','don'];
   const bad=maf.includes(target.role);
-  const msg=`${target.name}: ${bad?'🔴 МАФИЯ!':'✅ Мирный'}`;
-  toast(msg,bad?'terr':'tok');
-  speak(msg);
+  const msg2=`${target.name}: ${bad?'🔴 МАФИЯ!':'✅ Мирный'}`;
+  toast(msg2,bad?'terr':'tok');
+  speak(msg2);
   if(isHost){
     clearNightAuto();
     setTimeout(()=>advanceNight('night_detective'),800);
@@ -1173,7 +1230,6 @@ function doStartNight(){
   const room=gs;
   Object.values(room.players).forEach(p=>{ p.immune=false; });
   room.immunePlayer=null; room.nightTarget=null;
-  room.nightCheckedRole=null; room.nightCheckedName=null;
   const hasDoc=Object.values(room.players).some(p=>p.alive&&p.role==='doctor');
   room.phase=hasDoc?'night_doctor':'night_mafia';
   gs=room; broadcast(room);
@@ -1211,8 +1267,7 @@ function doVote(){
   if(!selTarget) return;
   if(isHost){
     const room=gs;
-    room.votes=room.votes||{};
-    room.voteReady=room.voteReady||[];
+    room.votes=room.votes||{}; room.voteReady=room.voteReady||[];
     room.votes[ME]=selTarget;
     if(!room.voteReady.includes(ME)) room.voteReady.push(ME);
     gs=room; broadcast(room);
@@ -1236,6 +1291,7 @@ function doSkipVote(){
   } else {
     emit({type:'vote',from:ME,target:null});
   }
+  toast('Пропустили','tinfo');
 }
 
 function resolveVote(){
@@ -1249,10 +1305,10 @@ function resolveVote(){
   Object.values(votes).forEach(v=>{ if(v) cnt[v]=(cnt[v]||0)+1; });
   let maxV=0, executed=null;
   for(const[pid,c] of Object.entries(cnt)){ if(c>maxV){maxV=c;executed=pid;} }
-  const skipped=voteReady.length-Object.values(votes).filter(Boolean).length;
-  if(!executed||skipped>=alive.length/2){
+  const totalVotes=Object.values(votes).filter(Boolean).length;
+  if(!executed||totalVotes<1){
     hostSay(`<span class="hr">⚖️ Нет большинства.</span> Голосование пропущено. Наступает ночь.`);
-    speak('Нет единого мнения. Наступает ночь.');
+    speak('Нет единого решения. Наступает ночь.');
     room.votes={}; room.voteReady=[];
     room.round=(room.round||1)+1;
     gs=room; broadcast(room);
@@ -1315,29 +1371,24 @@ function sendChat(){
   }
 }
 
-let lastMsgLen2=0;
+let lastMsgLen=0;
 function renderChatLog(messages){
   const log=document.getElementById('chatLog');
   const wasBot=log.scrollTop+log.clientHeight>=log.scrollHeight-5;
-  const prev=log.querySelectorAll('.cmsg[data-idx]').length;
-  if(messages.length>lastMsgLen2){
-    for(let i=lastMsgLen2;i<messages.length;i++){
+  if(messages.length>lastMsgLen){
+    for(let i=lastMsgLen;i<messages.length;i++){
       const m=messages[i];
       if(m.id!==ME&&ttsEnabled) speak(`${m.name}: ${m.text}`);
+      const d=document.createElement('div');
+      d.className='cmsg'; d.dataset.idx=i;
+      const player=gs?.players[m.id];
+      const isDead=player&&!player.alive;
+      d.innerHTML=`<span class="cn" style="color:${avC(m.name)}">${m.name}${isDead?'<span class="dead-badge">💀</span>':''}</span>${m.text}`;
+      log.appendChild(d);
     }
-    lastMsgLen2=messages.length;
+    lastMsgLen=messages.length;
+    if(wasBot||lastMsgLen===messages.length) log.scrollTop=log.scrollHeight;
   }
-  if(messages.length===prev) return;
-  for(let i=prev;i<messages.length;i++){
-    const m=messages[i];
-    const d=document.createElement('div');
-    d.className='cmsg'; d.dataset.idx=i;
-    const player=gs?.players[m.id];
-    const isDead=player&&!player.alive;
-    d.innerHTML=`<span class="cn" style="color:${avC(m.name)}">${m.name}${isDead?'<span class="dead-badge">💀</span>':''}</span>${m.text}`;
-    log.appendChild(d);
-  }
-  if(wasBot||prev===0) log.scrollTop=log.scrollHeight;
 }
 
 // ══════════════════════════════════════════════════
@@ -1402,12 +1453,12 @@ function setupMic(){
   const an=audioCtx.createAnalyser(); an.fftSize=512;
   src.connect(an);
   const data=new Uint8Array(an.frequencyBinCount);
-  let tt2=null;
+  let silenceTimer=null;
   function check(){
     if(!micStream) return;
     an.getByteFrequencyData(data);
     const avg=data.reduce((a,b)=>a+b,0)/data.length;
-    if(avg>15){ clearTimeout(tt2); if(!isTalking) setTalking(true); tt2=setTimeout(()=>setTalking(false),600); }
+    if(avg>15){ clearTimeout(silenceTimer); if(!isTalking) setTalking(true); silenceTimer=setTimeout(()=>setTalking(false),600); }
     requestAnimationFrame(check);
   }
   check();
@@ -1416,7 +1467,6 @@ function setupMic(){
 function setTalking(v){
   if(isTalking===v) return; isTalking=v;
   if(!gs) return;
-  // Broadcast speaking indicator via patch (host only — guests emit small msg)
   if(isHost){
     gs.speaking=gs.speaking||{};
     gs.speaking[ME]=v;
@@ -1449,9 +1499,13 @@ function showResult(room){
 function playAgain(){
   if(!isHost){ go('sLobby'); return; }
   const room=gs;
-  const nr={...room,status:'lobby',phase:'lobby',round:1,winner:null,eliminated:null,nightTarget:null,immunePlayer:null,votes:{},voteReady:[],messages:[],savedLastNight:false,readyCount:0,nightCheckedRole:null,speaking:{}};
+  const nr={...room,status:'lobby',phase:'lobby',round:1,winner:null,eliminated:null,
+    nightTarget:null,immunePlayer:null,votes:{},voteReady:[],messages:[],
+    savedLastNight:false,readyPlayers:[],speaking:{}};
   Object.keys(nr.players).forEach(id=>{ nr.players[id]={...nr.players[id],alive:true,role:null,immune:false}; });
-  gs=nr; broadcast(nr); renderLobby(); go('sLobby');
+  gs=nr; broadcast(nr);
+  roleRevealDone=false; lastMsgLen=0; prevPhase='';
+  renderLobby(); go('sLobby');
 }
 
 function leaveRoom(){
@@ -1460,7 +1514,7 @@ function leaveRoom(){
   if(ablyClient){ try{ablyClient.close();}catch(e){} }
   ablyClient=null; ablyChannel=null;
   roomCode=''; gs=null; selTarget=null; nightPick=null;
-  readyCount_local=0; isHost=false; lastMsgLen2=0; prevPhase='';
+  roleRevealDone=false; isHost=false; lastMsgLen=0; prevPhase='';
   if(micStream){ micStream.getTracks().forEach(t=>t.stop()); micStream=null; }
   go('sHome');
 }
