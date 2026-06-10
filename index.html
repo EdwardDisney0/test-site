@@ -364,19 +364,222 @@ input::placeholder{color:rgba(239,239,239,.2)}
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
 // ══════════════════════════════════════════════════
+// SOUND ENGINE  (Web Audio API — no external files)
+// ══════════════════════════════════════════════════
+let _sfxCtx = null;
+function getSfxCtx(){
+  if(!_sfxCtx) _sfxCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(_sfxCtx.state==='suspended') _sfxCtx.resume();
+  return _sfxCtx;
+}
+
+const SFX = {
+
+  // 🔫 Выстрел — резкий белый шум + затухание
+  gunshot(){
+    const ctx = getSfxCtx();
+    const dur = 0.35;
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2.5);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(1.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    const dist = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for(let i=0;i<256;i++){ const x=i*2/255-1; curve[i]=x<0?-Math.pow(-x,0.5):Math.pow(x,0.5); }
+    dist.curve = curve;
+    src.connect(dist); dist.connect(gain); gain.connect(ctx.destination);
+    src.start(); src.stop(ctx.currentTime + dur);
+  },
+
+  // 🚪 Скрип двери — FM-синтез нарастающего скрипа
+  door(){
+    const ctx = getSfxCtx();
+    const dur = 1.1;
+    const osc = ctx.createOscillator();
+    const mod = ctx.createOscillator();
+    const modGain = ctx.createGain();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(340, ctx.currentTime + dur * 0.7);
+    osc.frequency.linearRampToValueAtTime(220, ctx.currentTime + dur);
+    mod.type = 'sine';
+    mod.frequency.setValueAtTime(8, ctx.currentTime);
+    mod.frequency.linearRampToValueAtTime(22, ctx.currentTime + dur);
+    modGain.gain.setValueAtTime(60, ctx.currentTime);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05);
+    gain.gain.linearRampToValueAtTime(0.14, ctx.currentTime + dur - 0.1);
+    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
+    mod.connect(modGain); modGain.connect(osc.frequency);
+    osc.connect(gain); gain.connect(ctx.destination);
+    mod.start(); osc.start();
+    mod.stop(ctx.currentTime + dur); osc.stop(ctx.currentTime + dur);
+  },
+
+  // 🐓 Петух — синтез крика (ку-ка-ре-ку)
+  rooster(){
+    const ctx = getSfxCtx();
+    const notes = [
+      {f:800, dur:0.18, del:0},
+      {f:1000, dur:0.22, del:0.2},
+      {f:900, dur:0.16, del:0.44},
+      {f:1100, dur:0.35, del:0.62},
+    ];
+    notes.forEach(n => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(n.f * 0.85, ctx.currentTime + n.del);
+      osc.frequency.linearRampToValueAtTime(n.f, ctx.currentTime + n.del + n.dur * 0.3);
+      osc.frequency.linearRampToValueAtTime(n.f * 0.75, ctx.currentTime + n.del + n.dur);
+      gain.gain.setValueAtTime(0, ctx.currentTime + n.del);
+      gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + n.del + 0.03);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + n.del + n.dur);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + n.del);
+      osc.stop(ctx.currentTime + n.del + n.dur + 0.05);
+    });
+  },
+
+  // 👣 Шаги (ночь наступает) — 4 глухих удара
+  footsteps(){
+    const ctx = getSfxCtx();
+    for(let i=0;i<4;i++){
+      const t = ctx.currentTime + i * 0.38;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for(let j=0;j<d.length;j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(d.length*0.18));
+      const src = ctx.createBufferSource(); src.buffer = buf;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.7, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      const filt = ctx.createBiquadFilter();
+      filt.type = 'lowpass'; filt.frequency.value = 280;
+      src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
+      src.start(t); src.stop(t + 0.15);
+    }
+  },
+
+  // 🔔 Колокол — начало дня
+  bell(){
+    const ctx = getSfxCtx();
+    const freqs = [523, 659, 784]; // C E G
+    freqs.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.12;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 2.0);
+      // overtone
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.type = 'sine'; osc2.frequency.value = f * 2.756;
+      g2.gain.setValueAtTime(0, t);
+      g2.gain.linearRampToValueAtTime(0.08, t + 0.01);
+      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+      osc2.connect(g2); g2.connect(ctx.destination);
+      osc2.start(t); osc2.stop(t + 1.0);
+    });
+  },
+
+  // 💓 Сердцебиение (мафия выбирает) — низкий дубль-удар
+  heartbeat(){
+    const ctx = getSfxCtx();
+    function beat(delay){
+      [0, 0.18].forEach(dt => {
+        const t = ctx.currentTime + delay + dt;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(60, t);
+        osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
+        gain.gain.setValueAtTime(0.9, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.3);
+      });
+    }
+    beat(0); beat(0.7); beat(1.4);
+  },
+
+  // ⚖️ Дроматический аккорд (приговор / результат) — низкий минорный
+  verdict(){
+    const ctx = getSfxCtx();
+    const freqs = [110, 130.8, 164.8]; // A C E (Am)
+    freqs.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.07;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.22, t + 0.05);
+      gain.gain.setValueAtTime(0.22, t + 0.5);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 2.2);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 2.5);
+    });
+  },
+
+  // 🌿 Мелодия знакомства — восходящая пентатоника
+  intro(){
+    const ctx = getSfxCtx();
+    const scale = [261.6, 293.7, 329.6, 392, 440, 523.3];
+    scale.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.16;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.6);
+    });
+  },
+
+  // ✅ Спасение доктором — мажорный всплеск
+  saved(){
+    const ctx = getSfxCtx();
+    const freqs = [523.3, 659.3, 783.9, 1046.5];
+    freqs.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.09;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.7);
+    });
+  },
+};
+
+// ══════════════════════════════════════════════════
 // CONSTANTS & STATE
 // ══════════════════════════════════════════════════
 
 const ABLY_KEY = 'w6mFSg.YQFODA:Jg5sMhRSlRWl6lzi2iZofiR41c2doBHiotMriZuc1UA';
 
-// ME is a stable random ID for this browser session
 const ME = 'p' + Math.random().toString(36).slice(2,9);
 
 let myName='', myRole=null, roomCode='', isHost=false;
 let gs=null;
 let selTarget=null;
 let nightPick=null;
-// roleRevealDone: true once this player clicked "Я готов"
 let roleRevealDone=false;
 let phaseTimer=null, timerSec=0, timerMax=60;
 let micStream=null, audioCtx=null, isTalking=false;
@@ -405,12 +608,9 @@ function emit(data){
   if(ablyChannel) ablyChannel.publish('msg', JSON.stringify(data));
 }
 
-// Host always broadcasts full state — also applies locally since echoMessages:false
 function broadcast(room){
   gs=room;
   emit({type:'state', state:room});
-  // Host doesn't receive its own messages back (echoMessages:false), apply locally
-  if(isHost) setTimeout(()=>applyState(room),0);
 }
 
 function patch(obj){
@@ -466,18 +666,15 @@ function mkBtn(label,cls,fn,dis){ const b=document.createElement('button'); b.cl
 function onData(msg){
   switch(msg.type){
 
-    // ── HOST handles join requests ──
     case 'hello':
       if(!isHost) break;
       {
         const room=gs;
         const count=Object.keys(room.players||{}).length;
         if(count>=room.maxPlayers){
-          // tell just that client — we can't target in Ably pub/sub,
-          // so broadcast room_full to channel (guests ignore if already in)
           emit({type:'room_full', to:msg.id}); break;
         }
-        if(room.players[msg.id]) break; // already joined
+        if(room.players[msg.id]) break;
         room.players[msg.id]={id:msg.id,name:msg.name,alive:true,isHost:false,immune:false,joined:Date.now()};
         gs=room;
         broadcast(room);
@@ -489,16 +686,13 @@ function onData(msg){
       if(msg.to&&msg.to!==ME) break;
       toast('Комната заполнена!','terr'); go('sHome'); break;
 
-    // ── Full state from host ──
     case 'state':
       applyState(msg.state); break;
 
-    // ── Night actions ──
     case 'night_action':
       if(!isHost) break;
       handleNightAction(msg); break;
 
-    // ── Ready ──
     case 'mark_ready':
       if(!isHost) break;
       {
@@ -513,7 +707,6 @@ function onData(msg){
       }
       break;
 
-    // ── Chat ──
     case 'chat':
       if(!isHost) break;
       {
@@ -525,7 +718,6 @@ function onData(msg){
       }
       break;
 
-    // ── Vote ──
     case 'vote':
       if(!isHost) break;
       {
@@ -540,7 +732,6 @@ function onData(msg){
       }
       break;
 
-    // ── Speaking indicator ──
     case 'speaking':
       if(!isHost) break;
       {
@@ -606,7 +797,6 @@ async function joinRoom(){
   document.getElementById('startArea').innerHTML='';
   document.getElementById('lobbyInfo').textContent='';
   go('sLobby');
-  // Send hello — retry a few times in case host isn't subscribed yet
   emit({type:'hello', id:ME, name:myName});
   setTimeout(()=>{ if(gs&&gs.players&&gs.players[ME]) return; emit({type:'hello', id:ME, name:myName}); },1500);
   setTimeout(()=>{ if(gs&&gs.players&&gs.players[ME]) return; emit({type:'hello', id:ME, name:myName}); },3500);
@@ -696,13 +886,11 @@ function applyState(room){
   }
 
   if(room.status==='playing'){
-    // Role reveal phase
     if(room.phase==='roleReveal'){
       if(!roleRevealDone) showRoleReveal(room);
       return;
     }
 
-    // Ensure we're on the game screen
     const cur=document.querySelector('.screen.active')?.id;
     if(cur!=='sGame') go('sGame');
 
@@ -737,7 +925,6 @@ function showRoleReveal(room){
   document.getElementById('rIcon').textContent=cfg.icon;
   document.getElementById('rName').textContent=cfg.name;
   document.getElementById('rDesc').textContent=cfg.desc;
-  // Show mafia teammates
   const mt=['mafia','don'];
   const mw=document.getElementById('mTeamWrap');
   mw.style.display='none';
@@ -766,7 +953,6 @@ function markReady(){
   } else {
     emit({type:'mark_ready', from:ME});
   }
-  // Move to game screen immediately; renderGame/onPhaseEnter will follow via applyState
   go('sGame');
   if(gs&&gs.phase!=='roleReveal') renderGame(gs);
 }
@@ -779,6 +965,7 @@ function onPhaseEnter(room){
   const tSec=room.timerSec||60;
 
   if(room.phase==='intro'){
+    SFX.intro();
     hostSay(`<strong>🌿 Знакомство!</strong> Представьтесь городу. У вас <strong>${tSec} секунд</strong>.`);
     speak(`Начинается знакомство. У вас ${tSec} секунд.`);
     setChatBlocked(false);
@@ -791,6 +978,7 @@ function onPhaseEnter(room){
     clearNightAuto();
     const hasDoc=Object.values(room.players).some(p=>p.alive&&p.role==='doctor');
     if(!hasDoc&&isHost){ advanceNight('night_doctor'); return; }
+    SFX.footsteps();
     openNightOverlay(room,'night_doctor');
     const me=room.players[ME];
     if(me&&me.alive&&me.role==='doctor') speak('Доктор, просыпайтесь. Выберите кому дать иммунитет.');
@@ -799,6 +987,7 @@ function onPhaseEnter(room){
   }
   else if(room.phase==='night_mafia'){
     clearNightAuto();
+    SFX.heartbeat();
     openNightOverlay(room,'night_mafia');
     const me=room.players[ME];
     if(me&&me.alive&&['mafia','don'].includes(me.role)) speak('Мафия, просыпайтесь. Выберите жертву.');
@@ -809,6 +998,7 @@ function onPhaseEnter(room){
     clearNightAuto();
     const hasDet=Object.values(room.players).some(p=>p.alive&&(p.role==='detective'||p.role==='don'));
     if(!hasDet&&isHost){ doEndNight(); return; }
+    SFX.door();
     openNightOverlay(room,'night_detective');
     const me=room.players[ME];
     if(me&&me.alive&&(me.role==='detective'||me.role==='don')) speak('Детектив, просыпайтесь. Проверьте одного игрока.');
@@ -817,17 +1007,21 @@ function onPhaseEnter(room){
   }
   else if(room.phase==='morning'){
     closeNight();
+    SFX.rooster();
     setChatBlocked(false);
     setTimeout(()=>{
       if(room.eliminated){
+        setTimeout(()=>SFX.gunshot(), 400);
         showSplash('🔫',`${room.eliminated} убит!`);
         hostSay(`<span class="hr">☀️ Тело найдено!</span> Убит <span class="hr">${room.eliminated}</span>. Обсуждение через 3 сек...`);
         speak(`Этой ночью был убит ${room.eliminated}.`);
       } else if(room.savedLastNight){
+        SFX.saved();
         showSplash('🛡️','Доктор спас жертву!');
         hostSay(`<span class="hg">☀️ Доктор спас!</span> Никто не погиб.`);
         speak('Доктор успел спасти жертву! Никто не погиб.');
       } else {
+        SFX.bell();
         hostSay(`<span class="hg">☀️ Спокойная ночь.</span> Никто не погиб.`);
         speak('Спокойная ночь. Никто не пострадал.');
       }
@@ -836,6 +1030,7 @@ function onPhaseEnter(room){
   }
   else if(room.phase==='day'){
     const tDay=room.timerSec||60;
+    SFX.bell();
     setChatBlocked(false);
     hostSay(`<strong>☀️ День ${room.round}.</strong> Обсуждайте! <strong>${tDay} сек.</strong>`);
     speak(`День ${room.round}. Обсуждение началось. ${tDay} секунд.`);
@@ -1023,12 +1218,10 @@ function closeNight(){
   currentNightAction=null;
 }
 
-// Delegated click handler on overlay
 document.getElementById('nightOverlay').addEventListener('click',function(e){
   const nc=document.getElementById('nContent');
   if(!nc) return;
 
-  // Target row click
   const row=e.target.closest('.trow[data-pid]');
   if(row&&nc.contains(row)){
     nightPick=row.dataset.pid;
@@ -1040,11 +1233,9 @@ document.getElementById('nightOverlay').addEventListener('click',function(e){
     return;
   }
 
-  // Action button
   const abtn=e.target.closest('#nightActionBtn');
   if(abtn&&!abtn.disabled&&currentNightAction){ currentNightAction(); return; }
 
-  // Host next button
   const nbtn=e.target.closest('#nightNextBtn');
   if(nbtn) doNightNext();
 });
@@ -1058,7 +1249,6 @@ function renderNightContent(room,step){
     const isDoc=alive&&me.role==='doctor';
     if(isDoc){
       currentNightAction=doNightDoc;
-      // Doctor can protect anyone including self
       const targets=Object.values(room.players).filter(p=>p.alive);
       nc.innerHTML=buildNightUI('💊','Доктор просыпается','Выберите игрока — кому дать иммунитет?',targets,step,'b-pur','💊 Дать иммунитет');
     } else {
@@ -1070,7 +1260,6 @@ function renderNightContent(room,step){
     const isMaf=alive&&['mafia','don'].includes(me.role);
     if(isMaf){
       currentNightAction=doNightKill;
-      // Mafia picks from non-mafia alive players
       const maf=['mafia','don'];
       const targets=Object.values(room.players).filter(p=>p.alive&&!maf.includes(p.role));
       nc.innerHTML=buildNightUI('🔫','Мафия просыпается','Выберите жертву.',targets,step,'b-blood','🔫 Убить');
@@ -1083,7 +1272,6 @@ function renderNightContent(room,step){
     const isDet=alive&&(me.role==='detective'||me.role==='don');
     if(isDet){
       currentNightAction=doNightDet;
-      // Detective checks anyone except themselves
       const targets=Object.values(room.players).filter(p=>p.alive&&p.id!==ME);
       nc.innerHTML=buildNightUI('🔍','Детектив просыпается','Проверьте одного игрока.',targets,step,'b-blue','🔍 Проверить');
     } else {
@@ -1092,7 +1280,6 @@ function renderNightContent(room,step){
     }
   }
 
-  // Restore selection if any
   if(nightPick){
     const selRow=nc.querySelector(`.trow[data-pid="${nightPick}"]`);
     if(selRow){
@@ -1128,7 +1315,6 @@ let nightAutoTimer=null;
 function clearNightAuto(){ clearTimeout(nightAutoTimer); nightAutoTimer=null; }
 function scheduleNightAuto(sec,fn){ clearNightAuto(); nightAutoTimer=setTimeout(fn,sec*1000); }
 
-// Host handles all night_action messages
 function handleNightAction(msg){
   if(!isHost) return;
   const room=gs; if(!room) return;
@@ -1261,7 +1447,7 @@ function doEndNight(){
 }
 
 // ══════════════════════════════════════════════════
-// DAY / VOTE
+// DAY / VOTE  (ИСПРАВЛЕНО: большинство пропусков → пропуск раунда)
 // ══════════════════════════════════════════════════
 function doVote(){
   if(!selTarget) return;
@@ -1299,27 +1485,40 @@ function resolveVote(){
   stopTimer();
   const room=gs;
   const votes=room.votes||{};
-  const voteReady=room.voteReady||[];
   const alive=Object.values(room.players).filter(p=>p.alive);
-  const cnt={};
-  Object.values(votes).forEach(v=>{ if(v) cnt[v]=(cnt[v]||0)+1; });
-  let maxV=0, executed=null;
-  for(const[pid,c] of Object.entries(cnt)){ if(c>maxV){maxV=c;executed=pid;} }
-  const totalVotes=Object.values(votes).filter(Boolean).length;
-  if(!executed||totalVotes<1){
-    hostSay(`<span class="hr">⚖️ Нет большинства.</span> Голосование пропущено. Наступает ночь.`);
-    speak('Нет единого решения. Наступает ночь.');
+
+  // Считаем реальные голоса (за конкретного игрока) и пропуски
+  const realVotes = Object.values(votes).filter(v => !!v);
+  const skipCount  = (room.voteReady||[]).length - realVotes.length;
+
+  // Считаем топ-голосуемого
+  const cnt = {};
+  realVotes.forEach(v => { cnt[v] = (cnt[v]||0) + 1; });
+  let maxV = 0, executed = null;
+  for(const [pid, c] of Object.entries(cnt)){
+    if(c > maxV){ maxV = c; executed = pid; }
+  }
+
+  // Если пропусков >= реальных голосов ЗА кого-либо → пропустить
+  if(!executed || skipCount >= realVotes.length){
+    SFX.verdict();
+    hostSay(`<span class="hr">⚖️ Большинство пропустили.</span> Казни нет. Наступает ночь.`);
+    speak('Большинство проголосовало за пропуск. Никто не казнён. Наступает ночь.');
     room.votes={}; room.voteReady=[];
     room.round=(room.round||1)+1;
     gs=room; broadcast(room);
     setTimeout(()=>doStartNight(),1500);
     return;
   }
+
+  // Иначе казним
   const ep=room.players[executed];
   if(ep){
     ep.alive=false;
     const pname=ep.name, prole=ep.role;
     const roleName=RC[prole]?.name||'?';
+    SFX.gunshot();
+    setTimeout(()=>SFX.verdict(), 600);
     speak(`Решение принято. ${pname} казнён. Его роль — ${roleName}.`);
     hostSay(`<strong>⚖️ Приговор!</strong> <span class="hr">${pname} казнён!</span> Роль: <span style="color:${RC[prole]?.color||'#aaa'}">${RC[prole]?.icon} ${roleName}</span>`);
     showSplash('⚖️',`${pname} казнён!`);
@@ -1492,6 +1691,8 @@ function showResult(room){
     row.innerHTML=`<div class="av" style="background:${avC(p.name)}">${inits(p.name)}</div><div style="flex:1"><div style="font-size:.87rem;font-weight:600">${p.name}${p.id===ME?' (Вы)':''}</div><div style="font-size:11px;color:${cfg.color}">${cfg.icon} ${cfg.name}</div></div><div style="font-size:17px">${p.alive?'✅':'💀'}</div>`;
     list.appendChild(row);
   });
+  if(w==='mafia') SFX.verdict();
+  else SFX.saved();
   speak(w==='mafia'?'Мафия победила! Город под контролем преступников.':'Поздравляем! Город победил мафию!');
   go('sResult');
 }
