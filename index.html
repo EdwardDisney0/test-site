@@ -611,6 +611,9 @@ function emit(data){
 function broadcast(room){
   gs=room;
   emit({type:'state', state:room});
+  // Host has echoMessages:false so won't receive own broadcast —
+  // apply state locally so host UI stays in sync
+  if(isHost) applyState(room);
 }
 
 function patch(obj){
@@ -866,8 +869,15 @@ function startGame(){
 // STATE HANDLER
 // ══════════════════════════════════════════════════
 let prevPhase='';
+let _applyBusy=false;
 
 function applyState(room){
+  if(!room||_applyBusy) return;
+  _applyBusy=true;
+  try{ _doApplyState(room); }finally{ _applyBusy=false; }
+}
+
+function _doApplyState(room){
   if(!room) return;
   gs=room;
   timerMax=room.timerSec||60;
@@ -911,7 +921,7 @@ function applyState(room){
       if(ov.classList.contains('show')) closeNight();
     }
   }
-}
+} // end _doApplyState
 
 // ══════════════════════════════════════════════════
 // ROLE REVEAL
