@@ -364,209 +364,49 @@ input::placeholder{color:rgba(239,239,239,.2)}
 <script src="https://cdn.ably.com/lib/ably.min-2.js"></script>
 <script>
 // ══════════════════════════════════════════════════
-// SOUND ENGINE  (Web Audio API — no external files)
+// SOUND ENGINE — загружает .mp3 из папки sounds/ в репо
+// Положи файлы: sounds/footsteps.mp3, sounds/heartbeat.mp3,
+//   sounds/door.mp3, sounds/rooster.mp3, sounds/gunshot.mp3,
+//   sounds/bell.mp3, sounds/saved.mp3, sounds/verdict.mp3, sounds/intro.mp3
 // ══════════════════════════════════════════════════
-let _sfxCtx = null;
-function getSfxCtx(){
-  if(!_sfxCtx) _sfxCtx = new (window.AudioContext||window.webkitAudioContext)();
-  if(_sfxCtx.state==='suspended') _sfxCtx.resume();
-  return _sfxCtx;
+
+const SOUNDS_BASE = 'sounds/';
+const soundCache = {};
+
+function playSound(name) {
+  try {
+    if (!soundCache[name]) {
+      soundCache[name] = new Audio(SOUNDS_BASE + name + '.mp3');
+      soundCache[name].volume = 0.85;
+    }
+    const s = soundCache[name];
+    s.currentTime = 0;
+    s.play().catch(() => {});
+  } catch(e) {}
 }
 
+// Обёртки с теми же именами что были — ничего менять не надо
 const SFX = {
-
-  // 🔫 Выстрел — резкий белый шум + затухание
-  gunshot(){
-    const ctx = getSfxCtx();
-    const dur = 0.35;
-    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2.5);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(1.4, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    const dist = ctx.createWaveShaper();
-    const curve = new Float32Array(256);
-    for(let i=0;i<256;i++){ const x=i*2/255-1; curve[i]=x<0?-Math.pow(-x,0.5):Math.pow(x,0.5); }
-    dist.curve = curve;
-    src.connect(dist); dist.connect(gain); gain.connect(ctx.destination);
-    src.start(); src.stop(ctx.currentTime + dur);
-  },
-
-  // 🚪 Скрип двери — FM-синтез нарастающего скрипа
-  door(){
-    const ctx = getSfxCtx();
-    const dur = 1.1;
-    const osc = ctx.createOscillator();
-    const mod = ctx.createOscillator();
-    const modGain = ctx.createGain();
-    const gain = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(180, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(340, ctx.currentTime + dur * 0.7);
-    osc.frequency.linearRampToValueAtTime(220, ctx.currentTime + dur);
-    mod.type = 'sine';
-    mod.frequency.setValueAtTime(8, ctx.currentTime);
-    mod.frequency.linearRampToValueAtTime(22, ctx.currentTime + dur);
-    modGain.gain.setValueAtTime(60, ctx.currentTime);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.05);
-    gain.gain.linearRampToValueAtTime(0.14, ctx.currentTime + dur - 0.1);
-    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + dur);
-    mod.connect(modGain); modGain.connect(osc.frequency);
-    osc.connect(gain); gain.connect(ctx.destination);
-    mod.start(); osc.start();
-    mod.stop(ctx.currentTime + dur); osc.stop(ctx.currentTime + dur);
-  },
-
-  // 🐓 Петух — синтез крика (ку-ка-ре-ку)
-  rooster(){
-    const ctx = getSfxCtx();
-    const notes = [
-      {f:800, dur:0.18, del:0},
-      {f:1000, dur:0.22, del:0.2},
-      {f:900, dur:0.16, del:0.44},
-      {f:1100, dur:0.35, del:0.62},
-    ];
-    notes.forEach(n => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(n.f * 0.85, ctx.currentTime + n.del);
-      osc.frequency.linearRampToValueAtTime(n.f, ctx.currentTime + n.del + n.dur * 0.3);
-      osc.frequency.linearRampToValueAtTime(n.f * 0.75, ctx.currentTime + n.del + n.dur);
-      gain.gain.setValueAtTime(0, ctx.currentTime + n.del);
-      gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + n.del + 0.03);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + n.del + n.dur);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + n.del);
-      osc.stop(ctx.currentTime + n.del + n.dur + 0.05);
-    });
-  },
-
-  // 👣 Шаги (ночь наступает) — 4 глухих удара
-  footsteps(){
-    const ctx = getSfxCtx();
-    for(let i=0;i<4;i++){
-      const t = ctx.currentTime + i * 0.38;
-      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for(let j=0;j<d.length;j++) d[j] = (Math.random()*2-1) * Math.exp(-j/(d.length*0.18));
-      const src = ctx.createBufferSource(); src.buffer = buf;
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.7, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
-      const filt = ctx.createBiquadFilter();
-      filt.type = 'lowpass'; filt.frequency.value = 280;
-      src.connect(filt); filt.connect(gain); gain.connect(ctx.destination);
-      src.start(t); src.stop(t + 0.15);
-    }
-  },
-
-  // 🔔 Колокол — начало дня
-  bell(){
-    const ctx = getSfxCtx();
-    const freqs = [523, 659, 784]; // C E G
-    freqs.forEach((f, i) => {
-      const t = ctx.currentTime + i * 0.12;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.3, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t + 2.0);
-      // overtone
-      const osc2 = ctx.createOscillator();
-      const g2 = ctx.createGain();
-      osc2.type = 'sine'; osc2.frequency.value = f * 2.756;
-      g2.gain.setValueAtTime(0, t);
-      g2.gain.linearRampToValueAtTime(0.08, t + 0.01);
-      g2.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-      osc2.connect(g2); g2.connect(ctx.destination);
-      osc2.start(t); osc2.stop(t + 1.0);
-    });
-  },
-
-  // 💓 Сердцебиение (мафия выбирает) — низкий дубль-удар
-  heartbeat(){
-    const ctx = getSfxCtx();
-    function beat(delay){
-      [0, 0.18].forEach(dt => {
-        const t = ctx.currentTime + delay + dt;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(60, t);
-        osc.frequency.exponentialRampToValueAtTime(30, t + 0.25);
-        gain.gain.setValueAtTime(0.9, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(t); osc.stop(t + 0.3);
-      });
-    }
-    beat(0); beat(0.7); beat(1.4);
-  },
-
-  // ⚖️ Дроматический аккорд (приговор / результат) — низкий минорный
-  verdict(){
-    const ctx = getSfxCtx();
-    const freqs = [110, 130.8, 164.8]; // A C E (Am)
-    freqs.forEach((f, i) => {
-      const t = ctx.currentTime + i * 0.07;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.22, t + 0.05);
-      gain.gain.setValueAtTime(0.22, t + 0.5);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 2.2);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t + 2.5);
-    });
-  },
-
-  // 🌿 Мелодия знакомства — восходящая пентатоника
-  intro(){
-    const ctx = getSfxCtx();
-    const scale = [261.6, 293.7, 329.6, 392, 440, 523.3];
-    scale.forEach((f, i) => {
-      const t = ctx.currentTime + i * 0.16;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.18, t + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t + 0.6);
-    });
-  },
-
-  // ✅ Спасение доктором — мажорный всплеск
-  saved(){
-    const ctx = getSfxCtx();
-    const freqs = [523.3, 659.3, 783.9, 1046.5];
-    freqs.forEach((f, i) => {
-      const t = ctx.currentTime + i * 0.09;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.2, t + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.start(t); osc.stop(t + 0.7);
-    });
-  },
+  gunshot()    { playSound('gunshot');   },
+  door()       { playSound('door');      },
+  rooster()    { playSound('rooster');   },
+  footsteps()  { playSound('footsteps'); },
+  bell()       { playSound('bell');      },
+  heartbeat()  { playSound('heartbeat'); },
+  verdict()    { playSound('verdict');   },
+  intro()      { playSound('intro');     },
+  saved()      { playSound('saved');     },
 };
+
+// Предзагрузка всех звуков при загрузке страницы
+window.addEventListener('load', () => {
+  ['gunshot','door','rooster','footsteps','bell','heartbeat','verdict','intro','saved']
+    .forEach(n => {
+      const a = new Audio(SOUNDS_BASE + n + '.mp3');
+      a.volume = 0.85;
+      soundCache[n] = a;
+    });
+});
 
 // ══════════════════════════════════════════════════
 // CONSTANTS & STATE
@@ -611,8 +451,6 @@ function emit(data){
 function broadcast(room){
   gs=room;
   emit({type:'state', state:room});
-  // Host has echoMessages:false so won't receive own broadcast —
-  // apply state locally so host UI stays in sync
   if(isHost) applyState(room);
 }
 
@@ -921,7 +759,7 @@ function _doApplyState(room){
       if(ov.classList.contains('show')) closeNight();
     }
   }
-} // end _doApplyState
+}
 
 // ══════════════════════════════════════════════════
 // ROLE REVEAL
@@ -1457,7 +1295,7 @@ function doEndNight(){
 }
 
 // ══════════════════════════════════════════════════
-// DAY / VOTE  (ИСПРАВЛЕНО: большинство пропусков → пропуск раунда)
+// DAY / VOTE
 // ══════════════════════════════════════════════════
 function doVote(){
   if(!selTarget) return;
@@ -1497,11 +1335,9 @@ function resolveVote(){
   const votes=room.votes||{};
   const alive=Object.values(room.players).filter(p=>p.alive);
 
-  // Считаем реальные голоса (за конкретного игрока) и пропуски
   const realVotes = Object.values(votes).filter(v => !!v);
   const skipCount  = (room.voteReady||[]).length - realVotes.length;
 
-  // Считаем топ-голосуемого
   const cnt = {};
   realVotes.forEach(v => { cnt[v] = (cnt[v]||0) + 1; });
   let maxV = 0, executed = null;
@@ -1509,7 +1345,6 @@ function resolveVote(){
     if(c > maxV){ maxV = c; executed = pid; }
   }
 
-  // Если пропусков >= реальных голосов ЗА кого-либо → пропустить
   if(!executed || skipCount >= realVotes.length){
     SFX.verdict();
     hostSay(`<span class="hr">⚖️ Большинство пропустили.</span> Казни нет. Наступает ночь.`);
@@ -1521,7 +1356,6 @@ function resolveVote(){
     return;
   }
 
-  // Иначе казним
   const ep=room.players[executed];
   if(ep){
     ep.alive=false;
@@ -1707,16 +1541,63 @@ function showResult(room){
   go('sResult');
 }
 
+// ══════════════════════════════════════════════════
+// PLAY AGAIN — исправлен баг с мёртвыми игроками
+// ══════════════════════════════════════════════════
 function playAgain(){
-  if(!isHost){ go('sLobby'); return; }
+  if(!isHost){
+    // Сброс локальных переменных для не-хоста
+    roleRevealDone=false; lastMsgLen=0; prevPhase='';
+    selTarget=null; nightPick=null;
+    go('sLobby');
+    return;
+  }
+
   const room=gs;
-  const nr={...room,status:'lobby',phase:'lobby',round:1,winner:null,eliminated:null,
-    nightTarget:null,immunePlayer:null,votes:{},voteReady:[],messages:[],
-    savedLastNight:false,readyPlayers:[],speaking:{}};
-  Object.keys(nr.players).forEach(id=>{ nr.players[id]={...nr.players[id],alive:true,role:null,immune:false}; });
-  gs=nr; broadcast(nr);
+
+  // Полностью пересоздаём объект игроков — сброс alive/role/immune
+  const resetPlayers = {};
+  Object.keys(room.players).forEach(id => {
+    const p = room.players[id];
+    resetPlayers[id] = {
+      id:      p.id,
+      name:    p.name,
+      isHost:  p.isHost,
+      joined:  p.joined,
+      alive:   true,     // ← все живые
+      role:    null,     // ← ролей нет
+      immune:  false,
+    };
+  });
+
+  const nr = {
+    ...room,
+    players:       resetPlayers,
+    status:        'lobby',
+    phase:         'lobby',
+    round:         1,
+    winner:        null,
+    eliminated:    null,
+    nightTarget:   null,
+    immunePlayer:  null,
+    votes:         {},
+    voteReady:     [],
+    messages:      [],
+    savedLastNight:false,
+    readyPlayers:  [],
+    speaking:      {},
+  };
+
+  gs = nr;
+  broadcast(nr);
+
+  // Сброс всех локальных переменных
   roleRevealDone=false; lastMsgLen=0; prevPhase='';
-  renderLobby(); go('sLobby');
+  selTarget=null; nightPick=null;
+  stopTimer(); closeNight();
+
+  renderLobby();
+  go('sLobby');
 }
 
 function leaveRoom(){
