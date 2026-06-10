@@ -536,15 +536,25 @@ function applyState(room){
   if(room.status==='playing'){
     if(room.phase==='roleReveal'){ if(cur!=='sRole') showRoleReveal(room); return; }
 
-    // Enter game screen if needed
-    if(cur==='sRole'&&!readyCount_local) return; // waiting for ready click
+    if(cur==='sRole'&&!readyCount_local) return;
     if(cur!=='sGame') go('sGame');
 
     renderGame(room);
 
-    if(room.phase!==prevPhase){
-      onPhaseEnter(room);
-      prevPhase=room.phase;
+    const phaseChanged=room.phase!==prevPhase;
+    if(phaseChanged){ onPhaseEnter(room); prevPhase=room.phase; }
+
+    // Always ensure night overlay matches current phase
+    const nightPhases=['night_doctor','night_mafia','night_detective'];
+    const ov=document.getElementById('nightOverlay');
+    if(nightPhases.includes(room.phase)){
+      if(!ov.classList.contains('show')||room.phase!==currentNightStep){
+        openNightOverlay(room,room.phase);
+      } else {
+        renderNightContent(room,room.phase);
+      }
+    } else {
+      if(ov.classList.contains('show')) closeNight();
     }
   }
 }
@@ -596,54 +606,51 @@ function onPhaseEnter(room){
     setChatBlocked(false);
     startTimer(tSec,()=>{
       speak('Знакомство завершено. Наступает первая ночь!');
-      if(isHost) doStartNight();
+      doStartNight();
     });
   }
 
   else if(room.phase==='night_doctor'){
-    closeNight();
-    // Everyone sees night
+    clearNightAuto();
     const me=room.players[ME];
-    const isDoc=me&&me.alive&&me.role==='doctor';
     const hasDoc=Object.values(room.players).some(p=>p.alive&&p.role==='doctor');
-    if(!hasDoc){
-      // no doctor alive, skip
-      if(isHost) setTimeout(()=>patch({phase:'night_mafia'}),1000);
-      return;
-    }
+    if(!hasDoc){ advanceNight('night_doctor'); return; }
     openNightOverlay(room,'night_doctor');
-    if(isDoc){
-      speak('Доктор, просыпайтесь. Выберите кому дать иммунитет этой ночью.');
+    if(me&&me.alive&&me.role==='doctor'){
+      speak('Доктор, просыпайтесь. Выберите кому дать иммунитет.');
     } else {
-      speak('Все спят. Доктор просыпается и делает выбор.');
+      speak('Ночь. Доктор просыпается.');
     }
+    // Auto-skip after 25s if doctor doesn't act
+    scheduleNightAuto(25, ()=>advanceNight('night_doctor'));
   }
 
   else if(room.phase==='night_mafia'){
+    clearNightAuto();
     const me=room.players[ME];
     openNightOverlay(room,'night_mafia');
-    const isMafia=['mafia','don'].includes(me?.role)&&me?.alive;
-    if(isMafia){
+    if(['mafia','don'].includes(me?.role)&&me?.alive){
       speak('Мафия, просыпайтесь. Выберите жертву.');
     } else {
       speak('Мафия просыпается и делает выбор.');
     }
+    // Auto-skip after 30s
+    scheduleNightAuto(30, ()=>advanceNight('night_mafia'));
   }
 
   else if(room.phase==='night_detective'){
+    clearNightAuto();
     const me=room.players[ME];
-    const isDet=me&&me.alive&&(me.role==='detective'||me.role==='don');
     const hasDet=Object.values(room.players).some(p=>p.alive&&(p.role==='detective'||p.role==='don'));
-    if(!hasDet){
-      if(isHost) setTimeout(()=>doEndNight(),1000);
-      return;
-    }
+    if(!hasDet){ doEndNight(); return; }
     openNightOverlay(room,'night_detective');
-    if(isDet){
+    if(me&&me.alive&&(me.role==='detective'||me.role==='don')){
       speak('Детектив, просыпайтесь. Проверьте одного игрока.');
     } else {
       speak('Детектив расследует.');
     }
+    // Auto-skip after 25s
+    scheduleNightAuto(25, ()=>advanceNight('night_detective'));
   }
 
   else if(room.phase==='morning'){
@@ -662,7 +669,7 @@ function onPhaseEnter(room){
         hostSay(`<span class="hg">☀️ Спокойная ночь.</span> Никто не погиб. Обсуждение через 3 секунды...`);
         speak('Спокойная ночь. Никто не пострадал.');
       }
-      setTimeout(()=>{ if(isHost) patch({phase:'day'}); },3000);
+      setTimeout(()=>patch({phase:'day'}), 3000);
     },600);
   }
 
@@ -674,17 +681,17 @@ function onPhaseEnter(room){
     startTimer(tDay,()=>{
       speak('Время вышло! Начинается голосование.');
       hostSay('⏰ Время вышло! <strong>Проголосуйте</strong> — нажмите «Готов голосовать» или выберите подозреваемого.');
-      if(isHost) patch({phase:'vote',votes:{},voteReady:[]});
+      patch({phase:'vote',votes:{},voteReady:[]});
     });
   }
 
   else if(room.phase==='vote'){
     selTarget=null;
     voteReadySet=new Set();
-    const totalAlive=Object.values(room.players).filter(p=>p.alive).length;
-    hostSay(`<strong>⚖️ Голосование!</strong> Кликните на игрока за столом и нажмите <strong>Голосовать</strong>. Или <strong>Пропустить</strong> — тогда цикл повторится.`);
-    speak(`Голосование! Выберите подозреваемого или пропустите.`);
-    startTimer(30,()=>{ if(isHost) resolveVote(); });
+    hostSay(`<strong>⚖️ Голосование!</strong> Кликните на игрока за столом → <strong>Голосовать</strong>.<br>Или <strong>Пропустить</strong> — начнётся следующая ночь.`);
+    speak(`Голосование! Выберите подозреваемого и проголосуйте, или пропустите.`);
+    // Auto-resolve after 30s
+    startTimer(30,()=>{ resolveVote(); });
   }
 }
 
@@ -842,16 +849,51 @@ function stopTimer(){ clearInterval(phaseTimer); }
 // ══════════════════════════════════════════════════
 // NIGHT OVERLAY
 // ══════════════════════════════════════════════════
-function openNightOverlay(room,step){
+// currentNightStep persists across re-renders
+let currentNightStep='';
+let currentNightRoom=null;
+let currentNightAction=null;
+
+function openNightOverlay(room, step){
   const ov=document.getElementById('nightOverlay');
   ov.style.background='rgba(2,2,10,.97)';
   ov.classList.add('show');
-  nightPick=null;
-  renderNightContent(room,step);
+  // Only reset pick when step changes
+  if(step !== currentNightStep) nightPick=null;
+  currentNightStep=step;
+  currentNightRoom=room;
+  renderNightContent(room, step);
 }
-function closeNight(){ document.getElementById('nightOverlay').classList.remove('show'); }
 
-function renderNightContent(room,step){
+function closeNight(){
+  document.getElementById('nightOverlay').classList.remove('show');
+  currentNightStep='';
+}
+
+// Event delegation on nightOverlay — always-on, no re-init needed
+document.addEventListener('click', function(e){
+  const ov=document.getElementById('nightOverlay');
+  if(!ov||!ov.classList.contains('show')) return;
+  const nc=document.getElementById('nContent');
+  if(!nc||!nc.contains(e.target)) return;
+
+  // Click on a target row
+  const row=e.target.closest('.trow[data-pid]');
+  if(row){
+    nightPick=row.dataset.pid;
+    nc.querySelectorAll('.trow[data-pid]').forEach(r=>r.classList.remove('tsel-red','tsel-grn','tsel-blu'));
+    const clsSel=currentNightStep==='night_mafia'?'tsel-red':currentNightStep==='night_doctor'?'tsel-grn':'tsel-blu';
+    row.classList.add(clsSel);
+    const btn=document.getElementById('nightActionBtn');
+    if(btn) btn.disabled=false;
+    return;
+  }
+  // Click on action button
+  const abtn=e.target.closest('#nightActionBtn');
+  if(abtn&&!abtn.disabled&&currentNightAction) currentNightAction();
+});
+
+function renderNightContent(room, step){
   const nc=document.getElementById('nContent');
   const me=room.players[ME];
   const alive=me&&me.alive;
@@ -859,9 +901,11 @@ function renderNightContent(room,step){
   if(step==='night_doctor'){
     const isDoc=alive&&me.role==='doctor';
     if(isDoc){
-      nc.innerHTML=buildNightUI('💊','Доктор просыпается','Выберите игрока — кому дать иммунитет этой ночью?',
-        buildTargets(room,false,false),step,'b-pur','💊 Дать иммунитет',doNightDoc);
+      currentNightAction=doNightDoc;
+      nc.innerHTML=buildNightUI('💊','Доктор просыпается','Выберите игрока — кому дать иммунитет?',
+        buildTargets(room,false,false),step,'b-pur','💊 Дать иммунитет');
     } else {
+      currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Доктор действует в тишине');
     }
   }
@@ -869,48 +913,51 @@ function renderNightContent(room,step){
     const maf=['mafia','don'];
     const isMaf=alive&&maf.includes(me.role);
     if(isMaf){
-      nc.innerHTML=buildNightUI('🔫','Мафия просыпается','Выберите жертву. Остальная мафия видит тот же экран.',
-        buildTargets(room,true,false),step,'b-blood','🔫 Убить',doNightKill);
+      currentNightAction=doNightKill;
+      nc.innerHTML=buildNightUI('🔫','Мафия просыпается','Выберите жертву.',
+        buildTargets(room,true,false),step,'b-blood','🔫 Убить');
     } else {
+      currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Мафия выбирает жертву');
     }
   }
   else if(step==='night_detective'){
     const isDet=alive&&(me.role==='detective'||me.role==='don');
     if(isDet){
-      nc.innerHTML=buildNightUI('🔍','Детектив просыпается','Выберите игрока для проверки. Результат увидите только вы.',
-        buildTargets(room,false,true),step,'b-blue','🔍 Проверить',doNightDet);
+      currentNightAction=doNightDet;
+      nc.innerHTML=buildNightUI('🔍','Детектив просыпается','Проверьте одного игрока. Результат только вам.',
+        buildTargets(room,false,true),step,'b-blue','🔍 Проверить');
     } else {
+      currentNightAction=null;
       nc.innerHTML=sleepHTML('Вы спите...','Детектив расследует');
     }
   }
 
-  // Bind buttons after innerHTML set
-  document.querySelectorAll('.trow[data-pid]').forEach(row=>{
-    row.onclick=()=>{
-      nightPick=row.dataset.pid;
-      openNightOverlay(room,step); // re-render
-    };
-  });
-  const actionBtn=document.getElementById('nightActionBtn');
-  if(actionBtn) actionBtn.disabled=!nightPick;
+  // Re-apply selection highlight if nightPick already set
+  if(nightPick){
+    const selRow=nc.querySelector(`.trow[data-pid="${nightPick}"]`);
+    if(selRow){
+      const clsSel=step==='night_mafia'?'tsel-red':step==='night_doctor'?'tsel-grn':'tsel-blu';
+      selRow.classList.add(clsSel);
+    }
+    const btn=document.getElementById('nightActionBtn');
+    if(btn) btn.disabled=false;
+  }
 }
 
 function sleepHTML(title,sub){
   return `<div class="sleep-screen"><span class="sleep-icon">😴</span><div class="n-title" style="font-size:1.4rem">${title}</div><div class="n-sub">${sub}</div></div>`;
 }
 
-function buildNightUI(icon,title,sub,targets,step,btnCls,btnLabel,btnFn){
+function buildNightUI(icon,title,sub,targets,step,btnCls,btnLabel){
   let html=`<span class="n-icon">${icon}</span><div class="n-title">${title}</div><div class="n-sub">${sub}</div><div class="tlist">`;
   targets.forEach(p=>{
-    const sel=nightPick===p.id;
-    const clsSel=step==='night_mafia'?'tsel-red':step==='night_doctor'?'tsel-grn':'tsel-blu';
-    html+=`<div class="trow ${sel?clsSel:''}" data-pid="${p.id}"><div class="tav" style="background:${avC(p.name)}">${inits(p.name)}</div><div class="tname">${p.name}</div><div class="tinfo">${p.immune?'🛡️ иммунитет':''}</div></div>`;
+    html+=`<div class="trow" data-pid="${p.id}"><div class="tav" style="background:${avC(p.name)}">${inits(p.name)}</div><div class="tname">${p.name}</div><div class="tinfo">${p.immune?'🛡️ иммунитет':''}</div></div>`;
   });
-  html+=`</div><div class="n-btns"><button class="btn ${btnCls}" id="nightActionBtn" ${nightPick?'':'disabled'} onclick="window._nightAction && window._nightAction()">${btnLabel}</button>`;
+  html+=`</div><div class="n-btns">`;
+  html+=`<button class="btn ${btnCls}" id="nightActionBtn" disabled>${btnLabel}</button>`;
   if(isHost) html+=`<button class="btn b-gold" onclick="doNightNext()">⏭️ Далее (хост)</button>`;
   html+=`</div>`;
-  window._nightAction=btnFn;
   return html;
 }
 
@@ -928,72 +975,97 @@ function buildTargets(room,excludeMaf=false,excludeSelf=false){
 // ══════════════════════════════════════════════════
 // NIGHT ACTIONS
 // ══════════════════════════════════════════════════
+// ── NIGHT TRANSITIONS ──
+// Anyone who performs their action advances the phase via emit.
+// A 25s auto-skip timer ensures the game never gets stuck.
+let nightAutoTimer=null;
+
+function clearNightAuto(){ clearTimeout(nightAutoTimer); nightAutoTimer=null; }
+
+function scheduleNightAuto(sec, fn){
+  clearNightAuto();
+  nightAutoTimer=setTimeout(fn, sec*1000);
+}
+
+function advanceNight(fromPhase){
+  // Only the person whose turn it is (or anyone after timeout) calls this
+  const room=getS(); if(!room||room.phase!==fromPhase) return;
+  if(fromPhase==='night_doctor'){
+    const hasDet=Object.values(room.players).some(p=>p.alive&&(p.role==='detective'||p.role==='don'));
+    room.phase='night_mafia';
+    gs=room; emit(room);
+  } else if(fromPhase==='night_mafia'){
+    const hasDet=Object.values(room.players).some(p=>p.alive&&(p.role==='detective'||p.role==='don'));
+    room.phase=hasDet?'night_detective':'morning_start';
+    gs=room; emit(room);
+    if(room.phase==='morning_start') doEndNight();
+  } else if(fromPhase==='night_detective'){
+    doEndNight();
+  }
+}
+
 function doNightDoc(){
   if(!nightPick) return;
-  const room=getS();
+  const room=getS(); if(!room) return;
   const target=room.players[nightPick];
   if(!target) return;
-  // Give immunity
+  clearNightAuto();
   room.immunePlayer=nightPick;
   room.players[nightPick].immune=true;
   gs=room; emit(room);
   toast('Иммунитет выдан 🛡️','tok');
   nightPick=null;
-  // Advance to mafia step
-  if(isHost) setTimeout(()=>patch({phase:'night_mafia'}),800);
-  else { closeNight(); }
+  setTimeout(()=>advanceNight('night_doctor'), 600);
 }
 
 function doNightKill(){
   if(!nightPick) return;
-  const room=getS();
+  const room=getS(); if(!room) return;
   const target=room.players[nightPick];
   if(!target) return;
+  clearNightAuto();
   room.nightTarget=nightPick;
   gs=room; emit(room);
   toast('Цель выбрана 🎯','tinfo');
   nightPick=null;
-  if(isHost) setTimeout(()=>patch({phase:'night_detective'}),800);
-  else { closeNight(); }
+  setTimeout(()=>advanceNight('night_mafia'), 600);
 }
 
 function doNightDet(){
   if(!nightPick) return;
-  const room=getS();
+  const room=getS(); if(!room) return;
   const target=room.players[nightPick];
   if(!target) return;
   const maf=['mafia','don'];
   const bad=maf.includes(target.role);
-  // Save result only for detective
+  clearNightAuto();
+  // Store result in room so only detective sees it on their own screen
+  room.detResultFor=ME;
   room.nightCheckedRole=bad?'mafia':'civil';
   room.nightCheckedName=target.name;
   gs=room; emit(room);
-  // Show to detective only via toast
-  const msg=`${target.name}: ${bad?'🔴 МАФИЯ':'✅ Мирный'}`;
+  const msg=`${target.name}: ${bad?'🔴 МАФИЯ!':'✅ Мирный'}`;
   toast(msg,bad?'terr':'tok');
   speak(msg);
-  addSysMsg(msg,'');
   nightPick=null;
-  if(isHost) setTimeout(()=>doEndNight(),800);
-  else { closeNight(); }
+  setTimeout(()=>advanceNight('night_detective'), 800);
 }
 
 function doNightNext(){
+  // Manual host skip
   const room=getS(); if(!room) return;
-  if(room.phase==='night_doctor') patch({phase:'night_mafia'});
-  else if(room.phase==='night_mafia') patch({phase:'night_detective'});
-  else if(room.phase==='night_detective') doEndNight();
+  clearNightAuto();
+  advanceNight(room.phase);
 }
 
 function doStartNight(){
   const room=getS(); if(!room) return;
-  // Reset immunity for new night
   Object.values(room.players).forEach(p=>{ p.immune=false; });
   room.immunePlayer=null;
   room.nightTarget=null;
   room.nightCheckedRole=null;
   room.nightCheckedName=null;
-  // Check if doctor alive
+  room.detResultFor=null;
   const hasDoc=Object.values(room.players).some(p=>p.alive&&p.role==='doctor');
   room.phase=hasDoc?'night_doctor':'night_mafia';
   gs=room; emit(room);
@@ -1038,15 +1110,15 @@ function doVote(){
   const room=getS(); if(!room) return;
   room.votes=room.votes||{};
   room.votes[ME]=selTarget;
-  if(!room.voteReady) room.voteReady=[];
+  room.voteReady=room.voteReady||[];
   if(!room.voteReady.includes(ME)) room.voteReady.push(ME);
   gs=room; emit(room);
   toast('Проголосовали ✅','tok');
   selTarget=null;
   addSysMsg(`${myName} проголосовал`,'');
-  // Check if all alive voted
+  // Auto-resolve when all alive players have voted/skipped
   const alive=Object.values(room.players).filter(p=>p.alive);
-  if(room.voteReady.length>=alive.length&&isHost) resolveVote();
+  if(room.voteReady.length>=alive.length) setTimeout(()=>resolveVote(),800);
 }
 
 function doSkipVote(){
@@ -1056,7 +1128,7 @@ function doSkipVote(){
   gs=room; emit(room);
   addSysMsg(`${myName} пропустил голосование`,'');
   const alive=Object.values(room.players).filter(p=>p.alive);
-  if(room.voteReady.length>=alive.length&&isHost) resolveVote();
+  if(room.voteReady.length>=alive.length) setTimeout(()=>resolveVote(),800);
 }
 
 function resolveVote(){
@@ -1077,15 +1149,13 @@ function resolveVote(){
   const skipped=voteReady.length-totalVotes;
 
   if(!executed||skipped>=alive.length/2){
-    // Skip — new night
-    addSysMsg('⚖️ Нет единого мнения — ночь наступает заново','sys');
-    speak('Нет единого мнения. Голосование пропущено. Наступает ночь.');
+    addSysMsg('⚖️ Нет большинства — наступает ночь','sys');
+    speak('Нет единого мнения. Наступает ночь.');
     hostSay(`<span class="hr">⚖️ Нет большинства.</span> Голосование пропущено. Наступает ночь.`);
-    room.phase='night_start';
     room.votes={}; room.voteReady=[];
     room.round=(room.round||1)+1;
     gs=room; emit(room);
-    if(isHost) setTimeout(()=>doStartNight(),1200);
+    setTimeout(()=>doStartNight(), 1500);
     return;
   }
 
@@ -1102,7 +1172,7 @@ function resolveVote(){
   room.votes={}; room.voteReady=[]; room.round=(room.round||1)+1;
   gs=room; emit(room);
   checkWin(room);
-  if(room.status!=='finished') setTimeout(()=>{ if(isHost) doStartNight(); },2000);
+  if(room.status!=='finished') setTimeout(()=>doStartNight(), 2000);
 }
 
 // ══════════════════════════════════════════════════
